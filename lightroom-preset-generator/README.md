@@ -35,11 +35,11 @@ When passing effect modifications through the script generator (like Grain gener
 * **Native DOM XML Parsers**
 
 ### Development
-\`\`\`bash
+```bash
 # Start local dev server
 npm install
 npm run dev
 
 # Compile for production
 npm run build
-\`\`\`
+```
