@@ -1,5 +1,7 @@
 # Lightroom Preset Generator
 
+![Final Application Demonstration](./docs/media/demo.webp)
+
 A premium, dark-mode web application built with React and TypeScript that visually models, renders, and natively compiles `.xmp` Adobe Lightroom Presets directly in the browser across 100+ metadata parameters.
 
 ## Architectural Context & Maintenance
