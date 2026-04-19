@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Upload, Layers, Save, FileJson, Archive, Trash2 } from 'lucide-react';
+import { Upload, Layers, Save, FileJson, Archive, Trash2, Download } from 'lucide-react';
 import { useStore } from './store';
 import { extractExif } from './exif';
 import { renderPhotoBorder } from './render';
@@ -9,7 +9,7 @@ import CanvasPreview from './CanvasPreview';
 import SidebarControls from './SidebarControls';
 
 function App() {
-  const { state, addImage, updateConfig, clearAllImages } = useStore();
+  const { state, addImage, updateConfig, clearAllImages, setActiveImage } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Dynamically load fonts from Google Fonts for seamless usage
@@ -139,6 +139,39 @@ function App() {
     link.click();
   };
 
+  const handleExportSingle = async () => {
+    if (state.images.length === 0) return;
+
+    let targetImage = state.images.find(img => img.id === state.activeImageId);
+    if (!targetImage) targetImage = state.images[0];
+
+    const canvas = document.createElement('canvas');
+    let logoImg: HTMLImageElement | null = null;
+    if (state.config.logo.dataUrl) {
+      logoImg = new Image();
+      await new Promise((resolve) => {
+        logoImg!.onload = resolve;
+        logoImg!.src = state.config.logo.dataUrl!;
+      });
+    }
+
+    const img = new Image();
+    await new Promise((resolve) => {
+      img.onload = resolve;
+      img.src = targetImage.objectUrl;
+    });
+
+    renderPhotoBorder(canvas, targetImage, img, state.config, logoImg);
+
+    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 1.0));
+    if (blob) {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `Bordered-${targetImage.file.name}`;
+      link.click();
+    }
+  };
+
   const savePresetJSON = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.config, null, 2));
     const dlAnchorElem = document.createElement('a');
@@ -202,6 +235,9 @@ function App() {
             <button className="btn btn-outline" onClick={() => fileInputRef.current?.click()}>
               <Upload size={16} /> Import Photos
             </button>
+            <button className="btn btn-outline" onClick={handleExportSingle} disabled={state.images.length === 0}>
+              <Download size={16} /> Export View
+            </button>
             <button className="btn btn-primary" onClick={handleExportBatch} disabled={state.images.length === 0}>
               <Archive size={16} /> Batch Export Zip
             </button>
@@ -223,7 +259,41 @@ function App() {
               </button>
             </div>
           ) : (
-            <CanvasPreview />
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <CanvasPreview />
+              </div>
+              {state.images.length > 1 && (
+                <div style={{ 
+                  height: '80px', 
+                  flexShrink: 0, 
+                  display: 'flex', 
+                  gap: '8px', 
+                  padding: '8px', 
+                  overflowX: 'auto', 
+                  background: 'var(--surface-color)', 
+                  borderTop: '1px solid var(--surface-border)' 
+                }}>
+                  {state.images.map(img => (
+                    <div 
+                      key={img.id} 
+                      onClick={() => setActiveImage(img.id)} 
+                      style={{ 
+                        cursor: 'pointer', 
+                        opacity: state.activeImageId === img.id ? 1 : 0.5, 
+                        border: state.activeImageId === img.id ? '2px solid #3b82f6' : '2px solid transparent', 
+                        borderRadius: '4px', 
+                        overflow: 'hidden',
+                        height: '100%',
+                        flexShrink: 0
+                      }}
+                    >
+                      <img src={img.objectUrl} style={{ height: '100%', objectFit: 'cover', width: 'auto' }} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
