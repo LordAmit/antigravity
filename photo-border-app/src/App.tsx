@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Upload, Layers, Save, FileJson, Archive } from 'lucide-react';
+import { Upload, Layers, Save, FileJson, Archive, Trash2 } from 'lucide-react';
 import { useStore } from './store';
 import { extractExif } from './exif';
 import { renderPhotoBorder } from './render';
@@ -9,7 +9,7 @@ import CanvasPreview from './CanvasPreview';
 import SidebarControls from './SidebarControls';
 
 function App() {
-  const { state, addImage, updateConfig } = useStore();
+  const { state, addImage, updateConfig, clearAllImages } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Dynamically load fonts from Google Fonts for seamless usage
@@ -196,6 +196,9 @@ function App() {
               <Save size={16} /> Save Preset
             </button>
             <div style={{ width: '1px', background: 'var(--surface-border)', margin: '0 4px' }}></div>
+            <button className="btn btn-outline" onClick={() => clearAllImages()} disabled={state.images.length === 0} title="Clear All Images">
+              <Trash2 size={16} /> 
+            </button>
             <button className="btn btn-outline" onClick={() => fileInputRef.current?.click()}>
               <Upload size={16} /> Import Photos
             </button>

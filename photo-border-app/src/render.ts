@@ -197,13 +197,16 @@ export const renderPhotoBorder = (
     const { exifPills } = config;
     const { focalLength, fNumber, iso, exposureTime, lensModel, make, model, date } = image.exif;
     
+    const finalCameraText = exifPills.customCameraText || [make, model].filter(Boolean).join(' ');
+    const finalLensText = exifPills.customLensText || lensModel;
+
     const dataPairs = [];
     if (exifPills.showFocal && focalLength) dataPairs.push({ top: focalLength.toString(), bottom: 'mm' });
     if (exifPills.showAperture && fNumber) dataPairs.push({ top: fNumber.toString(), bottom: 'F' });
     if (exifPills.showIso && iso) dataPairs.push({ top: iso.toString(), bottom: 'ISO' });
     if (exifPills.showShutter && exposureTime) dataPairs.push({ top: exposureTime.toString(), bottom: 'S' });
-    if (exifPills.showLens && lensModel) dataPairs.push({ top: lensModel, bottom: 'LENS' });
-    if (exifPills.showCamera && (make || model)) dataPairs.push({ top: [make, model].filter(Boolean).join(' '), bottom: 'CAMERA' });
+    if (exifPills.showLens && finalLensText) dataPairs.push({ top: finalLensText, bottom: 'LENS' });
+    if (exifPills.showCamera && finalCameraText) dataPairs.push({ top: finalCameraText, bottom: 'CAMERA' });
     if (exifPills.showDate && date) dataPairs.push({ top: date.toString(), bottom: 'DATE' });
 
     if (dataPairs.length > 0) {
@@ -321,39 +324,48 @@ export const renderPhotoBorder = (
       const padY = canvas.height * label.paddingYScale;
       const { x: anchorX, y: anchorY } = getPositionalCoords(canvas.width, canvas.height, label.position, padX, padY);
 
-      let startX = anchorX;
-      if (label.position.includes('Right')) startX = anchorX - totalGroupWidth;
-      else if (label.position.includes('Center')) startX = anchorX - (totalGroupWidth / 2);
+      const offsetX = baseSize * (label.positionXScale || 0);
+      const offsetY = baseSize * (label.positionYScale || 0);
+
+      let startX = anchorX + offsetX;
+      if (label.position.includes('Right')) startX = anchorX + offsetX - totalGroupWidth;
+      else if (label.position.includes('Center')) startX = anchorX + offsetX - (totalGroupWidth / 2);
 
       let currentX = startX;
 
       // Base Y alignment (middle)
-      let displayY = anchorY;
+      let displayY = anchorY + offsetY;
       if (label.position.includes('Top')) displayY += fontSize / 2; // Offset since Baseline is middle
       else if (label.position.includes('Bottom')) displayY -= fontSize / 2;
 
       // Draw Logo First (if left)
+      const logoOffsetX = baseSize * (config.logo.offsetXScale || 0);
+      const logoOffsetY = baseSize * (config.logo.offsetYScale || 0);
+
       if (logoDrawW > 0 && config.logo.placement === 'Left of Text' && logoImgObject) {
-         ctx.drawImage(logoImgObject, currentX, displayY - (logoDrawH / 2), logoDrawW, logoDrawH);
+         ctx.drawImage(logoImgObject, currentX + logoOffsetX, (displayY - (logoDrawH / 2)) + logoOffsetY, logoDrawW, logoDrawH);
          currentX += logoDrawW + gap;
       }
 
-      ctx.fillStyle = label.color;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
+      // Draw Brand Text Core
+      if (textWidth > 0) {
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        
+        if (label.strokeWidthScale > 0) {
+          ctx.lineWidth = baseSize * label.strokeWidthScale;
+          ctx.strokeStyle = label.strokeColor;
+          ctx.strokeText(text, currentX, displayY);
+        }
+        ctx.fillStyle = label.color;
+        ctx.fillText(text, currentX, displayY);
 
-      if (label.strokeWidthScale > 0 && label.strokeColor) {
-        ctx.strokeStyle = label.strokeColor;
-        ctx.lineWidth = baseSize * label.strokeWidthScale;
-        ctx.strokeText(text, currentX, displayY);
+        currentX += textWidth + gap;
       }
-      ctx.fillText(text, currentX, displayY);
-
-      currentX += textWidth + gap;
 
       // Draw Logo Next (if right)
       if (logoDrawW > 0 && config.logo.placement === 'Right of Text' && logoImgObject) {
-         ctx.drawImage(logoImgObject, currentX, displayY - (logoDrawH / 2), logoDrawW, logoDrawH);
+         ctx.drawImage(logoImgObject, currentX + logoOffsetX, (displayY - (logoDrawH / 2)) + logoOffsetY, logoDrawW, logoDrawH);
       }
     });
   }

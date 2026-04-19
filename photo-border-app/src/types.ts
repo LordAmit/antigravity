@@ -46,6 +46,8 @@ export interface TextLabel {
   strokeColor: string;
   strokeWidthScale: number;
   position: "Top Left" | "Top Center" | "Top Right" | "Bottom Left" | "Bottom Center" | "Bottom Right" | "Center";
+  positionXScale: number;
+  positionYScale: number;
   paddingYScale: number;
   paddingXScale: number;
   customFontDataUrl?: string; // stores base64 of uploaded font for preset persistence
@@ -56,6 +58,8 @@ export interface LogoSettings {
   sizeScale: number;
   placement: "Left of Text" | "Right of Text";
   gapScale: number; // space between logo and text
+  offsetXScale: number;
+  offsetYScale: number;
 }
 
 export interface ExifPillSettings {
@@ -80,6 +84,8 @@ export interface ExifPillSettings {
   paddingYScale: number;
   paddingXScale: number;
   borderWidthScale: number;
+  customCameraText?: string;
+  customLensText?: string;
 }
 
 export interface AppConfig {

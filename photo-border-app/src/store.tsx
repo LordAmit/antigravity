@@ -31,15 +31,19 @@ export const defaultConfig: AppConfig = {
       strokeColor: "#000000",
       strokeWidthScale: 0,
       position: "Bottom Center",
-      paddingYScale: 0.15,
+      positionXScale: 0,
+      positionYScale: 0,
+      paddingYScale: 0.05,
       paddingXScale: 0.5,
     }
   ],
   logo: {
     dataUrl: null,
-    sizeScale: 0.05,
-    placement: "Left of Text",
+    sizeScale: 0.1,
+    placement: "Right of Text",
     gapScale: 0.02,
+    offsetXScale: 0,
+    offsetYScale: 0,
   },
   exifPills: {
     show: true,
@@ -69,10 +73,11 @@ export const defaultConfig: AppConfig = {
 interface StoreContextType {
   state: AppState;
   setState: React.Dispatch<React.SetStateAction<AppState>>;
-  updateConfig: (updater: (prev: AppConfig) => AppConfig) => void;
-  addImage: (image: ImageItem) => void;
+  updateConfig: (updater: (config: AppConfig) => AppConfig) => void;
+  addImage: (img: ImageItem) => void;
   removeImage: (id: string) => void;
   setActiveImage: (id: string | null) => void;
+  clearAllImages: () => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -114,8 +119,12 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setState(prev => ({ ...prev, activeImageId: id }));
   };
 
+  const clearAllImages = () => {
+    setState(prev => ({ ...prev, images: [], activeImageId: null }));
+  };
+
   return (
-    <StoreContext.Provider value={{ state, setState, updateConfig, addImage, removeImage, setActiveImage }}>
+    <StoreContext.Provider value={{ state, setState, updateConfig, addImage, removeImage, setActiveImage, clearAllImages }}>
       {children}
     </StoreContext.Provider>
   );

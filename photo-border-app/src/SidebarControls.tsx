@@ -7,16 +7,16 @@ const SliderRow = ({ label, value, min, max, step, onChange, onReset }: any) => 
     <div className="control-group">
       <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
         <label className="label">{label}</label>
-        <button 
-          onClick={onReset} 
-          title="Reset" 
+        <button
+          onClick={onReset}
+          title="Reset"
           style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#94a3b8', display: 'flex' }}
         >
           <RotateCcw size={14} />
         </button>
       </div>
       <div className="slider-container">
-        <input type="range" style={{width: '100%'}} min={min} max={max} step={step} value={value} onChange={(e) => onChange(parseFloat(e.target.value))} />
+        <input type="range" style={{ width: '100%' }} min={min} max={max} step={step} value={value} onChange={(e) => onChange(parseFloat(e.target.value))} />
       </div>
     </div>
   );
@@ -36,7 +36,7 @@ const SidebarControls: React.FC = () => {
     <div className="sidebar">
       <div className="sidebar-header">Controls</div>
       <div className="sidebar-content">
-        
+
         {/* Layout Settings */}
         <div className="accordion-item">
           <button className="accordion-header" onClick={() => toggleSection('layout')}>
@@ -45,15 +45,15 @@ const SidebarControls: React.FC = () => {
             </div>
             <span>{openSection === 'layout' ? '▲' : '▼'}</span>
           </button>
-          
+
           {openSection === 'layout' && (
             <div className="accordion-body">
               <div className="control-group">
                 <label className="label">Target Aspect Ratio</label>
-                <select 
-                  className="input-field" 
+                <select
+                  className="input-field"
                   value={config.layout.aspectRatio}
-                  onChange={(e) => updateConfig(c => ({...c, layout: {...c.layout, aspectRatio: e.target.value}}))}
+                  onChange={(e) => updateConfig(c => ({ ...c, layout: { ...c.layout, aspectRatio: e.target.value } }))}
                 >
                   <option value="Original">Match Original</option>
                   <option value="1:1">1:1 Square</option>
@@ -67,11 +67,11 @@ const SidebarControls: React.FC = () => {
               </div>
 
               <div className="control-group">
-                <label className="label">Background Type</label>
-                <select 
-                  className="input-field" 
+                <label className="label">Background</label>
+                <select
+                  className="input-field"
                   value={config.layout.backgroundType}
-                  onChange={(e) => updateConfig(c => ({...c, layout: {...c.layout, backgroundType: e.target.value as any}}))}
+                  onChange={(e) => updateConfig(c => ({ ...c, layout: { ...c.layout, backgroundType: e.target.value as any } }))}
                 >
                   <option value="color">Solid Color</option>
                   <option value="blurred-image">Blurred Image</option>
@@ -81,60 +81,60 @@ const SidebarControls: React.FC = () => {
               {config.layout.backgroundType === 'color' && (
                 <div className="control-group">
                   <label className="label">Background Color</label>
-                  <input 
-                    type="color" 
-                    className="input-field" 
+                  <input
+                    type="color"
+                    className="input-field"
                     style={{ height: '40px', padding: '2px' }}
                     value={config.layout.backgroundColor}
-                    onChange={(e) => updateConfig(c => ({...c, layout: {...c.layout, backgroundColor: e.target.value}}))}
+                    onChange={(e) => updateConfig(c => ({ ...c, layout: { ...c.layout, backgroundColor: e.target.value } }))}
                   />
                 </div>
               )}
 
               {config.layout.backgroundType === 'blurred-image' && (
                 <div className="flex-row">
-                  <SliderRow 
+                  <SliderRow
                     label="Blur Amount"
                     value={config.layout.backgroundBlurScale}
                     min="0" max="0.2" step="0.005"
-                    onChange={(val: number) => updateConfig(c => ({...c, layout: {...c.layout, backgroundBlurScale: val}}))}
-                    onReset={() => updateConfig(c => ({...c, layout: {...c.layout, backgroundBlurScale: defaultConfig.layout.backgroundBlurScale}}))}
+                    onChange={(val: number) => updateConfig(c => ({ ...c, layout: { ...c.layout, backgroundBlurScale: val } }))}
+                    onReset={() => updateConfig(c => ({ ...c, layout: { ...c.layout, backgroundBlurScale: defaultConfig.layout.backgroundBlurScale } }))}
                   />
-                  <SliderRow 
+                  <SliderRow
                     label="Dim Overlay"
                     value={config.layout.backgroundDimScale}
                     min="0" max="0.8" step="0.01"
-                    onChange={(val: number) => updateConfig(c => ({...c, layout: {...c.layout, backgroundDimScale: val}}))}
-                    onReset={() => updateConfig(c => ({...c, layout: {...c.layout, backgroundDimScale: defaultConfig.layout.backgroundDimScale}}))}
+                    onChange={(val: number) => updateConfig(c => ({ ...c, layout: { ...c.layout, backgroundDimScale: val } }))}
+                    onReset={() => updateConfig(c => ({ ...c, layout: { ...c.layout, backgroundDimScale: defaultConfig.layout.backgroundDimScale } }))}
                   />
                 </div>
               )}
 
               <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #334155' }}>
-                  <SliderRow 
-                    label={`Global Border Scale: ${(config.layout.borderWidthScale * 100).toFixed(0)}%`}
-                    value={config.layout.borderWidthScale}
-                    min="0" max="0.5" step="0.01"
-                    onChange={(val: number) => updateConfig(c => ({...c, layout: {...c.layout, borderWidthScale: val}}))}
-                    onReset={() => updateConfig(c => ({...c, layout: {...c.layout, borderWidthScale: defaultConfig.layout.borderWidthScale}}))}
-                  />
+                <SliderRow
+                  label={`Global Border Scale: ${(config.layout.borderWidthScale * 100).toFixed(0)}%`}
+                  value={config.layout.borderWidthScale}
+                  min="0" max="0.5" step="0.01"
+                  onChange={(val: number) => updateConfig(c => ({ ...c, layout: { ...c.layout, borderWidthScale: val } }))}
+                  onReset={() => updateConfig(c => ({ ...c, layout: { ...c.layout, borderWidthScale: defaultConfig.layout.borderWidthScale } }))}
+                />
               </div>
 
               <div className="control-group">
                 <label className="label">Inner Border Color</label>
-                <input 
-                  type="color" 
-                  className="input-field" 
+                <input
+                  type="color"
+                  className="input-field"
                   style={{ height: '36px', padding: '2px' }}
                   value={config.layout.innerBorderColor}
-                  onChange={(e) => updateConfig(c => ({...c, layout: {...c.layout, innerBorderColor: e.target.value}}))}
+                  onChange={(e) => updateConfig(c => ({ ...c, layout: { ...c.layout, innerBorderColor: e.target.value } }))}
                 />
               </div>
 
               <div className="control-group">
                 <label className="label">Inner Border Mode</label>
-                <select 
-                  className="input-field" 
+                <select
+                  className="input-field"
                   value={config.layout.innerBorderMode}
                   onChange={(e) => {
                     const mode = e.target.value as any;
@@ -148,7 +148,7 @@ const SidebarControls: React.FC = () => {
                       } else if (mode === 'polaroid') {
                         newTop = side;
                       }
-                      return { ...c, layout: { ...c.layout, innerBorderMode: mode, innerBorderTopScale: newTop, innerBorderBottomScale: newBottom }};
+                      return { ...c, layout: { ...c.layout, innerBorderMode: mode, innerBorderTopScale: newTop, innerBorderBottomScale: newBottom } };
                     });
                   }}
                 >
@@ -159,30 +159,30 @@ const SidebarControls: React.FC = () => {
               </div>
 
               {config.layout.innerBorderMode === 'uniform' && (
-                <SliderRow 
+                <SliderRow
                   label="Border Thickness"
                   value={config.layout.innerBorderSideScale}
                   min="0" max="0.3" step="0.005"
-                  onChange={(val: number) => updateConfig(c => ({...c, layout: {...c.layout, innerBorderSideScale: val, innerBorderTopScale: val, innerBorderBottomScale: val}}))}
-                  onReset={() => updateConfig(c => ({...c, layout: {...c.layout, innerBorderSideScale: defaultConfig.layout.innerBorderSideScale, innerBorderTopScale: defaultConfig.layout.innerBorderTopScale, innerBorderBottomScale: defaultConfig.layout.innerBorderBottomScale}}))}
+                  onChange={(val: number) => updateConfig(c => ({ ...c, layout: { ...c.layout, innerBorderSideScale: val, innerBorderTopScale: val, innerBorderBottomScale: val } }))}
+                  onReset={() => updateConfig(c => ({ ...c, layout: { ...c.layout, innerBorderSideScale: defaultConfig.layout.innerBorderSideScale, innerBorderTopScale: defaultConfig.layout.innerBorderTopScale, innerBorderBottomScale: defaultConfig.layout.innerBorderBottomScale } }))}
                 />
               )}
 
               {config.layout.innerBorderMode === 'polaroid' && (
                 <>
-                  <SliderRow 
+                  <SliderRow
                     label="Standard Frame Thickness"
                     value={config.layout.innerBorderSideScale}
                     min="0" max="0.3" step="0.005"
-                    onChange={(val: number) => updateConfig(c => ({...c, layout: {...c.layout, innerBorderSideScale: val, innerBorderTopScale: val}}))}
-                    onReset={() => updateConfig(c => ({...c, layout: {...c.layout, innerBorderSideScale: defaultConfig.layout.innerBorderSideScale, innerBorderTopScale: defaultConfig.layout.innerBorderTopScale}}))}
+                    onChange={(val: number) => updateConfig(c => ({ ...c, layout: { ...c.layout, innerBorderSideScale: val, innerBorderTopScale: val } }))}
+                    onReset={() => updateConfig(c => ({ ...c, layout: { ...c.layout, innerBorderSideScale: defaultConfig.layout.innerBorderSideScale, innerBorderTopScale: defaultConfig.layout.innerBorderTopScale } }))}
                   />
-                  <SliderRow 
+                  <SliderRow
                     label="Bottom Lip Extension"
                     value={config.layout.innerBorderBottomScale}
                     min="0" max="0.3" step="0.005"
-                    onChange={(val: number) => updateConfig(c => ({...c, layout: {...c.layout, innerBorderBottomScale: val}}))}
-                    onReset={() => updateConfig(c => ({...c, layout: {...c.layout, innerBorderBottomScale: defaultConfig.layout.innerBorderBottomScale}}))}
+                    onChange={(val: number) => updateConfig(c => ({ ...c, layout: { ...c.layout, innerBorderBottomScale: val } }))}
+                    onReset={() => updateConfig(c => ({ ...c, layout: { ...c.layout, innerBorderBottomScale: defaultConfig.layout.innerBorderBottomScale } }))}
                   />
                 </>
               )}
@@ -190,62 +190,62 @@ const SidebarControls: React.FC = () => {
               {config.layout.innerBorderMode === 'custom' && (
                 <>
                   <div className="flex-row">
-                    <SliderRow 
+                    <SliderRow
                       label="Inner Top"
                       value={config.layout.innerBorderTopScale}
                       min="0" max="0.3" step="0.005"
-                      onChange={(val: number) => updateConfig(c => ({...c, layout: {...c.layout, innerBorderTopScale: val}}))}
-                      onReset={() => updateConfig(c => ({...c, layout: {...c.layout, innerBorderTopScale: defaultConfig.layout.innerBorderTopScale}}))}
+                      onChange={(val: number) => updateConfig(c => ({ ...c, layout: { ...c.layout, innerBorderTopScale: val } }))}
+                      onReset={() => updateConfig(c => ({ ...c, layout: { ...c.layout, innerBorderTopScale: defaultConfig.layout.innerBorderTopScale } }))}
                     />
-                    <SliderRow 
+                    <SliderRow
                       label="Inner Bottom"
                       value={config.layout.innerBorderBottomScale}
                       min="0" max="0.3" step="0.005"
-                      onChange={(val: number) => updateConfig(c => ({...c, layout: {...c.layout, innerBorderBottomScale: val}}))}
-                      onReset={() => updateConfig(c => ({...c, layout: {...c.layout, innerBorderBottomScale: defaultConfig.layout.innerBorderBottomScale}}))}
+                      onChange={(val: number) => updateConfig(c => ({ ...c, layout: { ...c.layout, innerBorderBottomScale: val } }))}
+                      onReset={() => updateConfig(c => ({ ...c, layout: { ...c.layout, innerBorderBottomScale: defaultConfig.layout.innerBorderBottomScale } }))}
                     />
                   </div>
 
-                  <SliderRow 
+                  <SliderRow
                     label="Inner Sides"
                     value={config.layout.innerBorderSideScale}
                     min="0" max="0.3" step="0.005"
-                    onChange={(val: number) => updateConfig(c => ({...c, layout: {...c.layout, innerBorderSideScale: val}}))}
-                    onReset={() => updateConfig(c => ({...c, layout: {...c.layout, innerBorderSideScale: defaultConfig.layout.innerBorderSideScale}}))}
+                    onChange={(val: number) => updateConfig(c => ({ ...c, layout: { ...c.layout, innerBorderSideScale: val } }))}
+                    onReset={() => updateConfig(c => ({ ...c, layout: { ...c.layout, innerBorderSideScale: defaultConfig.layout.innerBorderSideScale } }))}
                   />
                 </>
               )}
 
-              <SliderRow 
-                label="Frame Corner Radius"
+              <SliderRow
+                label="Frame Radius"
                 value={config.layout.imageRadiusScale}
                 min="0" max="0.1" step="0.005"
-                onChange={(val: number) => updateConfig(c => ({...c, layout: {...c.layout, imageRadiusScale: val}}))}
-                onReset={() => updateConfig(c => ({...c, layout: {...c.layout, imageRadiusScale: defaultConfig.layout.imageRadiusScale}}))}
+                onChange={(val: number) => updateConfig(c => ({ ...c, layout: { ...c.layout, imageRadiusScale: val } }))}
+                onReset={() => updateConfig(c => ({ ...c, layout: { ...c.layout, imageRadiusScale: defaultConfig.layout.imageRadiusScale } }))}
               />
 
-              <SliderRow 
-                label="Inner Image Radius"
+              <SliderRow
+                label="Image Radius"
                 value={config.layout.innerImageRadiusScale}
                 min="0" max="0.1" step="0.005"
-                onChange={(val: number) => updateConfig(c => ({...c, layout: {...c.layout, innerImageRadiusScale: val}}))}
-                onReset={() => updateConfig(c => ({...c, layout: {...c.layout, innerImageRadiusScale: defaultConfig.layout.innerImageRadiusScale || 0}}))}
+                onChange={(val: number) => updateConfig(c => ({ ...c, layout: { ...c.layout, innerImageRadiusScale: val } }))}
+                onReset={() => updateConfig(c => ({ ...c, layout: { ...c.layout, innerImageRadiusScale: defaultConfig.layout.innerImageRadiusScale || 0 } }))}
               />
 
-              <SliderRow 
-                label="Frame Shadow Layer"
+              <SliderRow
+                label="Frame Shadow"
                 value={config.layout.imageShadowBlurScale}
                 min="0" max="0.1" step="0.005"
-                onChange={(val: number) => updateConfig(c => ({...c, layout: {...c.layout, imageShadowBlurScale: val}}))}
-                onReset={() => updateConfig(c => ({...c, layout: {...c.layout, imageShadowBlurScale: defaultConfig.layout.imageShadowBlurScale}}))}
+                onChange={(val: number) => updateConfig(c => ({ ...c, layout: { ...c.layout, imageShadowBlurScale: val } }))}
+                onReset={() => updateConfig(c => ({ ...c, layout: { ...c.layout, imageShadowBlurScale: defaultConfig.layout.imageShadowBlurScale } }))}
               />
 
-              <SliderRow 
-                label="Inner Image Shadow"
+              <SliderRow
+                label="Image Shadow"
                 value={config.layout.innerImageShadowBlurScale}
                 min="0" max="0.1" step="0.005"
-                onChange={(val: number) => updateConfig(c => ({...c, layout: {...c.layout, innerImageShadowBlurScale: val}}))}
-                onReset={() => updateConfig(c => ({...c, layout: {...c.layout, innerImageShadowBlurScale: defaultConfig.layout.innerImageShadowBlurScale || 0}}))}
+                onChange={(val: number) => updateConfig(c => ({ ...c, layout: { ...c.layout, innerImageShadowBlurScale: val } }))}
+                onReset={() => updateConfig(c => ({ ...c, layout: { ...c.layout, innerImageShadowBlurScale: defaultConfig.layout.innerImageShadowBlurScale || 0 } }))}
               />
             </div>
           )}
@@ -259,36 +259,36 @@ const SidebarControls: React.FC = () => {
             </div>
             <span>{openSection === 'typography' ? '▲' : '▼'}</span>
           </button>
-          
+
           {openSection === 'typography' && config.labels.length > 0 && (
             <div className="accordion-body">
               <div className="control-group">
-                <label className="label">Brand Text Template</label>
-                <input 
-                  type="text" 
-                  className="input-field" 
+                <label className="label">Brand Text</label>
+                <input
+                  type="text"
+                  className="input-field"
                   value={config.labels[0].text}
                   onChange={(e) => updateConfig(c => ({
-                    ...c, 
-                    labels: [{...c.labels[0], text: e.target.value }]
+                    ...c,
+                    labels: [{ ...c.labels[0], text: e.target.value }]
                   }))}
                 />
-                <small style={{display: 'block', marginTop: '4px', color: '#94a3b8', fontSize: '11px'}}>Use {`{make}`} or {`{model}`} for dynamic EXIF</small>
+                <small style={{ display: 'block', marginTop: '4px', color: '#94a3b8', fontSize: '11px' }}>Use {`{make}`} or {`{model}`} for dynamic EXIF</small>
               </div>
 
               <div className="control-group">
-                <label className="label">Font Family (e.g., Arial, Shantell Sans)</label>
+                <label className="label">Font</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <input 
-                    type="text" 
-                    className="input-field" 
+                  <input
+                    type="text"
+                    className="input-field"
                     value={config.labels[0].fontFamily}
                     onChange={(e) => updateConfig(c => ({
-                      ...c, labels: [{...c.labels[0], fontFamily: e.target.value}]
+                      ...c, labels: [{ ...c.labels[0], fontFamily: e.target.value }]
                     }))}
                   />
-                  <input 
-                    type="file" 
+                  <input
+                    type="file"
                     accept=".ttf,.otf,.woff,.woff2"
                     id="font-upload"
                     style={{ display: 'none' }}
@@ -296,11 +296,11 @@ const SidebarControls: React.FC = () => {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       const fontName = file.name.split('.')[0].replace(/[^a-zA-Z0-9]/g, '');
-                      
+
                       const reader = new FileReader();
                       reader.onload = (event) => {
                         const base64Url = event.target?.result as string;
-                        
+
                         // Inject font into document
                         const style = document.createElement('style');
                         style.innerHTML = `
@@ -310,11 +310,11 @@ const SidebarControls: React.FC = () => {
                           }
                         `;
                         document.head.appendChild(style);
-                        
+
                         // Force DOM to load font before rendering
                         document.fonts.load(`16px "${fontName}"`).then(() => {
                           updateConfig(c => ({
-                            ...c, labels: [{...c.labels[0], fontFamily: fontName, customFontDataUrl: base64Url}]
+                            ...c, labels: [{ ...c.labels[0], fontFamily: fontName, customFontDataUrl: base64Url }]
                           }));
                         });
                       };
@@ -323,8 +323,8 @@ const SidebarControls: React.FC = () => {
                       e.target.value = ''; // reset
                     }}
                   />
-                  <button 
-                    className="btn btn-outline" 
+                  <button
+                    className="btn btn-outline"
                     onClick={() => document.getElementById('font-upload')?.click()}
                     title="Upload Local Font File"
                     style={{ padding: '8px', minWidth: '40px' }}
@@ -332,23 +332,25 @@ const SidebarControls: React.FC = () => {
                     +
                   </button>
                 </div>
-                <small style={{display: 'block', marginTop: '4px', color: '#94a3b8', fontSize: '11px'}}>Alternatively, upload a .ttf/.otf file</small>
+                <small style={{ display: 'block', marginTop: '4px', color: '#94a3b8', fontSize: '11px' }}>Alternatively, upload a .ttf/.otf file</small>
               </div>
 
-              <SliderRow 
-                label="Font Size Scale"
+              <SliderRow
+                label="Font Size"
                 value={config.labels[0].fontSizeScale}
                 min="0.005" max="0.30" step="0.005"
-                onChange={(val: number) => updateConfig(c => ({...c, labels: [{...c.labels[0], fontSizeScale: val}]}))}
-                onReset={() => updateConfig(c => ({...c, labels: [{...c.labels[0], fontSizeScale: defaultConfig.labels[0].fontSizeScale}]}))}
+                onChange={(val: number) => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], fontSizeScale: val }] }))}
+                onReset={() => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], fontSizeScale: defaultConfig.labels[0].fontSizeScale }] }))}
               />
 
               <div className="control-group">
                 <label className="label">Text Position</label>
-                <select 
-                  className="input-field" 
+                <select
+                  className="input-field"
                   value={config.labels[0].position}
-                  onChange={(e) => updateConfig(c => ({...c, labels: [{...c.labels[0], position: e.target.value as any}]}))}
+                  onChange={(e) => updateConfig(c => ({
+                    ...c, labels: [{ ...c.labels[0], position: e.target.value as any }]
+                  }))}
                 >
                   <option value="Top Left">Top Left</option>
                   <option value="Top Center">Top Center</option>
@@ -361,38 +363,55 @@ const SidebarControls: React.FC = () => {
               </div>
 
               <div className="flex-row">
+                <SliderRow
+                  label="Offset X"
+                  value={config.labels[0].positionXScale}
+                  min="-0.5" max="0.5" step="0.01"
+                  onChange={(val: number) => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], positionXScale: val }] }))}
+                  onReset={() => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], positionXScale: defaultConfig.labels[0].positionXScale }] }))}
+                />
+                <SliderRow
+                  label="Offset Y"
+                  value={config.labels[0].positionYScale}
+                  min="-0.5" max="0.5" step="0.01"
+                  onChange={(val: number) => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], positionYScale: val }] }))}
+                  onReset={() => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], positionYScale: defaultConfig.labels[0].positionYScale }] }))}
+                />
+              </div>
+
+              <div className="flex-row">
                 <div className="control-group">
                   <label className="label">Color</label>
-                  <input 
-                    type="color" 
-                    className="input-field" 
+                  <input
+                    type="color"
+                    className="input-field"
                     style={{ height: '36px', padding: '2px' }}
                     value={config.labels[0].color}
                     onChange={(e) => updateConfig(c => ({
-                      ...c, labels: [{...c.labels[0], color: e.target.value}]
+                      ...c, labels: [{ ...c.labels[0], color: e.target.value }]
                     }))}
                   />
                 </div>
                 <div className="control-group">
-                  <label className="label">Stroke/Border Color</label>
-                  <input 
-                    type="color" 
-                    className="input-field" 
+                  <label className="label">Border Color</label>
+                  <input
+                    type="color"
+                    className="input-field"
                     style={{ height: '36px', padding: '2px' }}
                     value={config.labels[0].strokeColor || '#000000'}
                     onChange={(e) => updateConfig(c => ({
-                      ...c, labels: [{...c.labels[0], strokeColor: e.target.value}]
+                      ...c, labels: [{ ...c.labels[0], strokeColor: e.target.value }]
                     }))}
                   />
                 </div>
               </div>
 
-              <SliderRow 
-                label="Stroke Width Scale"
+              <SliderRow
+                label="Stroke Scale"
                 value={config.labels[0].strokeWidthScale}
                 min="0" max="0.02" step="0.001"
-                onChange={(val: number) => updateConfig(c => ({...c, labels: [{...c.labels[0], strokeWidthScale: val}]}))}
-                onReset={() => updateConfig(c => ({...c, labels: [{...c.labels[0], strokeWidthScale: defaultConfig.labels[0].strokeWidthScale}]}))}
+                onChange={(val: number) => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], strokeWidthScale: val }] }))}
+                onReset={() => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], strokeWidthScale: defaultConfig.labels[0].strokeWidthScale }] }))}
               />
 
             </div>
@@ -412,62 +431,79 @@ const SidebarControls: React.FC = () => {
             <div className="accordion-body">
               <div className="control-group">
                 <label className="label">Upload Logo</label>
-                <input 
-                  type="file" 
+                <input
+                  type="file"
                   accept="image/png, image/jpeg, image/svg+xml"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       const reader = new FileReader();
                       reader.onload = (event) => {
-                        updateConfig(c => ({...c, logo: {...c.logo, dataUrl: event.target?.result as string}}));
+                        updateConfig(c => ({ ...c, logo: { ...c.logo, dataUrl: event.target?.result as string } }));
                       };
                       reader.readAsDataURL(file);
                     }
                   }}
-                  className="input-field" 
+                  className="input-field"
                 />
               </div>
-              
+
               {config.logo.dataUrl && (
                 <>
                   <div className="control-group">
-                    <button 
-                      className="btn btn-outline" 
-                      style={{width: '100%'}}
-                      onClick={() => updateConfig(c => ({...c, logo: {...c.logo, dataUrl: null}}))}
+                    <button
+                      className="btn btn-outline"
+                      style={{ width: '100%' }}
+                      onClick={() => updateConfig(c => ({ ...c, logo: { ...c.logo, dataUrl: null } }))}
                     >
                       Clear Logo
                     </button>
                   </div>
 
-                  <SliderRow 
+                  <SliderRow
                     label="Scale Size"
                     value={config.logo.sizeScale}
                     min="0.01" max="0.30" step="0.01"
-                    onChange={(val: number) => updateConfig(c => ({...c, logo: {...c.logo, sizeScale: val}}))}
-                    onReset={() => updateConfig(c => ({...c, logo: {...c.logo, sizeScale: defaultConfig.logo.sizeScale}}))}
+                    onChange={(val: number) => updateConfig(c => ({ ...c, logo: { ...c.logo, sizeScale: val } }))}
+                    onReset={() => updateConfig(c => ({ ...c, logo: { ...c.logo, sizeScale: defaultConfig.logo.sizeScale } }))}
                   />
 
                   <div className="control-group">
                     <label className="label">Placement</label>
-                    <select 
-                      className="input-field" 
+                    <select
+                      className="input-field"
                       value={config.logo.placement}
-                      onChange={(e) => updateConfig(c => ({...c, logo: {...c.logo, placement: e.target.value as any}}))}
+                      onChange={(e) => updateConfig(c => ({ ...c, logo: { ...c.logo, placement: e.target.value as any } }))}
                     >
                       <option value="Left of Text">Left of Text</option>
                       <option value="Right of Text">Right of Text</option>
                     </select>
                   </div>
 
-                  <SliderRow 
+                  <SliderRow
                     label="Gap Distance"
                     value={config.logo.gapScale}
                     min="0" max="0.10" step="0.005"
-                    onChange={(val: number) => updateConfig(c => ({...c, logo: {...c.logo, gapScale: val}}))}
-                    onReset={() => updateConfig(c => ({...c, logo: {...c.logo, gapScale: defaultConfig.logo.gapScale}}))}
+                    onChange={(val: number) => updateConfig(c => ({ ...c, logo: { ...c.logo, gapScale: val } }))}
+                    onReset={() => updateConfig(c => ({ ...c, logo: { ...c.logo, gapScale: defaultConfig.logo.gapScale } }))}
                   />
+
+                  <div className="flex-row">
+                    <SliderRow
+                      label="Offset X"
+                      value={config.logo.offsetXScale}
+                      min="-0.5" max="0.5" step="0.01"
+                      onChange={(val: number) => updateConfig(c => ({ ...c, logo: { ...c.logo, offsetXScale: val } }))}
+                      onReset={() => updateConfig(c => ({ ...c, logo: { ...c.logo, offsetXScale: defaultConfig.logo.offsetXScale || 0 } }))}
+                    />
+                    <SliderRow
+                      label="Offset Y"
+                      value={config.logo.offsetYScale}
+                      min="-0.5" max="0.5" step="0.01"
+                      onChange={(val: number) => updateConfig(c => ({ ...c, logo: { ...c.logo, offsetYScale: val } }))}
+                      onReset={() => updateConfig(c => ({ ...c, logo: { ...c.logo, offsetYScale: defaultConfig.logo.offsetYScale || 0 } }))}
+                    />
+                  </div>
                 </>
               )}
             </div>
@@ -482,14 +518,14 @@ const SidebarControls: React.FC = () => {
             </div>
             <span>{openSection === 'exif' ? '▲' : '▼'}</span>
           </button>
-          
+
           {openSection === 'exif' && (
             <div className="accordion-body">
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', cursor: 'pointer' }}>
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={config.exifPills.show}
-                  onChange={(e) => updateConfig(c => ({...c, exifPills: {...c.exifPills, show: e.target.checked}}))}
+                  onChange={(e) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, show: e.target.checked } }))}
                 />
                 Show EXIF Pills
               </label>
@@ -498,69 +534,92 @@ const SidebarControls: React.FC = () => {
                 <>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={config.exifPills.showFocal}
-                        onChange={(e) => updateConfig(c => ({...c, exifPills: {...c.exifPills, showFocal: e.target.checked}}))}
+                        onChange={(e) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, showFocal: e.target.checked } }))}
                       />
                       Focal Length
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={config.exifPills.showAperture}
-                        onChange={(e) => updateConfig(c => ({...c, exifPills: {...c.exifPills, showAperture: e.target.checked}}))}
+                        onChange={(e) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, showAperture: e.target.checked } }))}
                       />
                       Aperture
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={config.exifPills.showIso}
-                        onChange={(e) => updateConfig(c => ({...c, exifPills: {...c.exifPills, showIso: e.target.checked}}))}
+                        onChange={(e) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, showIso: e.target.checked } }))}
                       />
                       ISO
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={config.exifPills.showShutter}
-                        onChange={(e) => updateConfig(c => ({...c, exifPills: {...c.exifPills, showShutter: e.target.checked}}))}
+                        onChange={(e) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, showShutter: e.target.checked } }))}
                       />
                       Shutter Speed
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={config.exifPills.showLens}
-                        onChange={(e) => updateConfig(c => ({...c, exifPills: {...c.exifPills, showLens: e.target.checked}}))}
+                        onChange={(e) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, showLens: e.target.checked } }))}
                       />
                       Lens
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={config.exifPills.showCamera}
-                        onChange={(e) => updateConfig(c => ({...c, exifPills: {...c.exifPills, showCamera: e.target.checked}}))}
+                        onChange={(e) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, showCamera: e.target.checked } }))}
                       />
                       Camera
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={config.exifPills.showDate}
-                        onChange={(e) => updateConfig(c => ({...c, exifPills: {...c.exifPills, showDate: e.target.checked}}))}
+                        onChange={(e) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, showDate: e.target.checked } }))}
                       />
                       Date
                     </label>
                   </div>
 
+                  <div className="flex-row">
+                    <div className="control-group">
+                      <label className="label">Custom Camera Text</label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        placeholder="e.g. FUJIFILM X-T5"
+                        value={config.exifPills.customCameraText || ''}
+                        onChange={(e) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, customCameraText: e.target.value } }))}
+                      />
+                    </div>
+                    <div className="control-group">
+                      <label className="label">Custom Lens Text</label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        placeholder="e.g. XF 33mm f/1.4"
+                        value={config.exifPills.customLensText || ''}
+                        onChange={(e) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, customLensText: e.target.value } }))}
+                      />
+                    </div>
+                  </div>
+
                   <div className="control-group">
                     <label className="label">Base Position</label>
-                    <select 
-                      className="input-field" 
+                    <select
+                      className="input-field"
                       value={config.exifPills.position}
-                      onChange={(e) => updateConfig(c => ({...c, exifPills: {...c.exifPills, position: e.target.value as any}}))}
+                      onChange={(e) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, position: e.target.value as any } }))}
                     >
                       <option value="Top Left">Top Left</option>
                       <option value="Top Center">Top Center</option>
@@ -573,85 +632,85 @@ const SidebarControls: React.FC = () => {
                   </div>
 
                   <div className="flex-row">
-                    <SliderRow 
+                    <SliderRow
                       label="Offset X"
                       value={config.exifPills.positionXScale}
                       min="-0.5" max="0.5" step="0.01"
-                      onChange={(val: number) => updateConfig(c => ({...c, exifPills: {...c.exifPills, positionXScale: val}}))}
-                      onReset={() => updateConfig(c => ({...c, exifPills: {...c.exifPills, positionXScale: defaultConfig.exifPills.positionXScale}}))}
+                      onChange={(val: number) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, positionXScale: val } }))}
+                      onReset={() => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, positionXScale: defaultConfig.exifPills.positionXScale } }))}
                     />
-                    <SliderRow 
+                    <SliderRow
                       label="Offset Y"
                       value={config.exifPills.positionYScale}
                       min="-0.5" max="0.5" step="0.01"
-                      onChange={(val: number) => updateConfig(c => ({...c, exifPills: {...c.exifPills, positionYScale: val}}))}
-                      onReset={() => updateConfig(c => ({...c, exifPills: {...c.exifPills, positionYScale: defaultConfig.exifPills.positionYScale}}))}
+                      onChange={(val: number) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, positionYScale: val } }))}
+                      onReset={() => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, positionYScale: defaultConfig.exifPills.positionYScale } }))}
                     />
                   </div>
 
                   <div className="flex-row">
                     <div className="control-group">
                       <label className="label">Text Color</label>
-                      <input 
-                        type="color" 
-                        className="input-field" 
+                      <input
+                        type="color"
+                        className="input-field"
                         style={{ height: '36px', padding: '2px' }}
                         value={config.exifPills.textColor}
-                        onChange={(e) => updateConfig(c => ({...c, exifPills: {...c.exifPills, textColor: e.target.value}}))}
+                        onChange={(e) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, textColor: e.target.value } }))}
                       />
                     </div>
                     <div className="control-group">
                       <label className="label">Border Color</label>
-                      <input 
-                        type="color" 
-                        className="input-field" 
+                      <input
+                        type="color"
+                        className="input-field"
                         style={{ height: '36px', padding: '2px' }}
                         value={config.exifPills.textStrokeColor || '#000000'}
-                        onChange={(e) => updateConfig(c => ({...c, exifPills: {...c.exifPills, textStrokeColor: e.target.value}}))}
+                        onChange={(e) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, textStrokeColor: e.target.value } }))}
                       />
                     </div>
                   </div>
 
-                  <SliderRow 
-                    label="Text Stroke Width Scale"
+                  <SliderRow
+                    label="Stroke size"
                     value={config.exifPills.textStrokeWidthScale || 0}
                     min="0" max="0.02" step="0.001"
-                    onChange={(val: number) => updateConfig(c => ({...c, exifPills: {...c.exifPills, textStrokeWidthScale: val}}))}
-                    onReset={() => updateConfig(c => ({...c, exifPills: {...c.exifPills, textStrokeWidthScale: defaultConfig.exifPills.textStrokeWidthScale || 0}}))}
+                    onChange={(val: number) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, textStrokeWidthScale: val } }))}
+                    onReset={() => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, textStrokeWidthScale: defaultConfig.exifPills.textStrokeWidthScale || 0 } }))}
                   />
                   <div className="control-group">
-                    <label className="label">Font Family</label>
-                    <input 
-                      type="text" 
-                      className="input-field" 
+                    <label className="label">Font</label>
+                    <input
+                      type="text"
+                      className="input-field"
                       value={config.exifPills.fontFamily}
                       placeholder="e.g. system-ui, Arial, Inter"
-                      onChange={(e) => updateConfig(c => ({...c, exifPills: {...c.exifPills, fontFamily: e.target.value}}))}
+                      onChange={(e) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, fontFamily: e.target.value } }))}
                     />
                   </div>
 
-                  <SliderRow 
-                    label="EXIF Font Size Scale"
+                  <SliderRow
+                    label="Font Size"
                     value={config.exifPills.fontSizeScale}
                     min="0.005" max="0.05" step="0.001"
-                    onChange={(val: number) => updateConfig(c => ({...c, exifPills: {...c.exifPills, fontSizeScale: val}}))}
-                    onReset={() => updateConfig(c => ({...c, exifPills: {...c.exifPills, fontSizeScale: defaultConfig.exifPills.fontSizeScale}}))}
+                    onChange={(val: number) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, fontSizeScale: val } }))}
+                    onReset={() => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, fontSizeScale: defaultConfig.exifPills.fontSizeScale } }))}
                   />
 
                   <div className="flex-row">
-                    <SliderRow 
-                      label="Box Padding X"
+                    <SliderRow
+                      label="Padding X"
                       value={config.exifPills.paddingXScale}
                       min="0" max="0.1" step="0.002"
-                      onChange={(val: number) => updateConfig(c => ({...c, exifPills: {...c.exifPills, paddingXScale: val}}))}
-                      onReset={() => updateConfig(c => ({...c, exifPills: {...c.exifPills, paddingXScale: defaultConfig.exifPills.paddingXScale}}))}
+                      onChange={(val: number) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, paddingXScale: val } }))}
+                      onReset={() => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, paddingXScale: defaultConfig.exifPills.paddingXScale } }))}
                     />
-                    <SliderRow 
-                      label="Box Padding Y"
+                    <SliderRow
+                      label="Padding Y"
                       value={config.exifPills.paddingYScale}
                       min="0" max="0.1" step="0.002"
-                      onChange={(val: number) => updateConfig(c => ({...c, exifPills: {...c.exifPills, paddingYScale: val}}))}
-                      onReset={() => updateConfig(c => ({...c, exifPills: {...c.exifPills, paddingYScale: defaultConfig.exifPills.paddingYScale}}))}
+                      onChange={(val: number) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, paddingYScale: val } }))}
+                      onReset={() => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, paddingYScale: defaultConfig.exifPills.paddingYScale } }))}
                     />
                   </div>
                 </>
