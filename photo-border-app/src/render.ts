@@ -101,19 +101,38 @@ export const renderPhotoBorder = (
       const bCtx = buffer.getContext('2d');
       
       if (bCtx) {
-        // Draw image to small buffer first
-        bCtx.drawImage(imgObject, coverX * bufferScale, coverY * bufferScale, coverW * bufferScale, coverH * bufferScale);
+        // Clear background for clean draw
+        bCtx.clearRect(0, 0, bW, bH);
         
-        // Apply blur to the small buffer (fast)
         const blurPx = (baseLength * blurScale) * bufferScale;
-        
-        if ('filter' in bCtx) {
+        const hasFilter = 'filter' in bCtx;
+
+        if (hasFilter && blurPx > 0) {
+          // Standard Strategy: Apply filter BEFORE drawing the image into the buffer
+          // This is the most compatible way for Safari/iOS to handle large blurs
           bCtx.filter = `blur(${blurPx}px)`;
-          // Re-draw itself to apply filter
-          bCtx.drawImage(buffer, 0, 0);
+          bCtx.drawImage(imgObject, coverX * bufferScale, coverY * bufferScale, coverW * bufferScale, coverH * bufferScale);
         } else {
-          // Minimal fallback: if filters are totally missing, we already have a low-res effect from downsampling
-          // Optionally we could do a secondary offset-draw but usually downsampling is enough of a "look" for background
+          // Fallback Strategy: Multi-pass Downsampling
+          // Iteratively shrink the image to naturally "blur" it via bilinear filtering
+          let tempW = coverW * bufferScale;
+          let tempH = coverH * bufferScale;
+          let tempX = coverX * bufferScale;
+          let tempY = coverY * bufferScale;
+
+          // Goal: Shrink to a tiny fraction to force massive smoothing
+          const passes = 3;
+          
+          for (let i = 0; i < passes; i++) {
+            bCtx.drawImage(imgObject, tempX, tempY, tempW, tempH);
+            // On each pass, the browser smooths the pixels
+            tempW *= 0.5;
+            tempH *= 0.5;
+            tempX = (bW - tempW) / 2;
+            tempY = (bH - tempH) / 2;
+          }
+          // Draw final results back to fill the buffer
+          bCtx.drawImage(buffer, 0, 0, tempW * 2, tempH * 2, 0, 0, bW, bH);
         }
         
         // Draw small blurred buffer back to main canvas (upscaling adds further smoothness)
