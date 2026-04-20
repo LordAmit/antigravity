@@ -251,6 +251,29 @@ input, select, textarea {
   flex: 1;
 }
 
+.thumbnail-remove-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--danger-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.thumbnail-remove-btn:hover {
+  transform: scale(1.1);
+  background: #ff6b6b;
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
   .app-container {

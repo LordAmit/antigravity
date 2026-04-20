@@ -88,11 +88,41 @@ export const renderPhotoBorder = (
     const coverX = (canvas.width - coverW) / 2;
     const coverY = (canvas.height - coverH) / 2;
     
-    const blurPx = baseLength * config.layout.backgroundBlurScale;
-    ctx.filter = `blur(${blurPx}px)`;
-    ctx.drawImage(imgObject, coverX, coverY, coverW, coverH);
+    const blurScale = config.layout.backgroundBlurScale;
+    if (blurScale > 0) {
+      // Create a small buffer for performance blur (around 400-800px max)
+      const bufferScale = Math.min(1, 800 / Math.max(canvas.width, canvas.height));
+      const bW = Math.max(1, Math.floor(canvas.width * bufferScale));
+      const bH = Math.max(1, Math.floor(canvas.height * bufferScale));
+      
+      const buffer = document.createElement('canvas');
+      buffer.width = bW;
+      buffer.height = bH;
+      const bCtx = buffer.getContext('2d');
+      
+      if (bCtx) {
+        // Draw image to small buffer first
+        bCtx.drawImage(imgObject, coverX * bufferScale, coverY * bufferScale, coverW * bufferScale, coverH * bufferScale);
+        
+        // Apply blur to the small buffer (fast)
+        const blurPx = (baseLength * blurScale) * bufferScale;
+        
+        if ('filter' in bCtx) {
+          bCtx.filter = `blur(${blurPx}px)`;
+          // Re-draw itself to apply filter
+          bCtx.drawImage(buffer, 0, 0);
+        } else {
+          // Minimal fallback: if filters are totally missing, we already have a low-res effect from downsampling
+          // Optionally we could do a secondary offset-draw but usually downsampling is enough of a "look" for background
+        }
+        
+        // Draw small blurred buffer back to main canvas (upscaling adds further smoothness)
+        ctx.drawImage(buffer, 0, 0, canvas.width, canvas.height);
+      }
+    } else {
+      ctx.drawImage(imgObject, coverX, coverY, coverW, coverH);
+    }
     
-    ctx.filter = 'none';
     if (config.layout.backgroundDimScale > 0) {
       ctx.fillStyle = `rgba(0, 0, 0, ${config.layout.backgroundDimScale})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
