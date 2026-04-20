@@ -15,7 +15,7 @@ function App() {
   // Dynamically load fonts from Google Fonts for seamless usage
   useEffect(() => {
     const fontsToLoad = new Set<string>();
-    
+
     // Check Label fonts
     state.config.labels.forEach(label => {
       // If it contains a raw base64 custom font, inject it natively instead of via Google Fonts
@@ -32,7 +32,7 @@ function App() {
           `;
           document.head.appendChild(style);
           if ('fonts' in document) {
-            document.fonts.load(`16px "${label.fontFamily}"`).then(() => updateConfig(c => ({...c})));
+            document.fonts.load(`16px "${label.fontFamily}"`).then(() => updateConfig(c => ({ ...c })));
           }
         }
       } else if (label.fontFamily && !label.fontFamily.includes('sans-serif')) {
@@ -52,17 +52,17 @@ function App() {
         link.id = linkId;
         link.rel = 'stylesheet';
         link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s+/g, '+')}:wght@400;600&display=swap`;
-        
+
         // When loaded, trigger a state update just to re-render the canvas
         link.onload = () => {
-          updateConfig(c => ({...c}));
+          updateConfig(c => ({ ...c }));
         };
-        
+
         document.head.appendChild(link);
-        
+
         // Also force Document.fonts to be ready if it's local but needs to be parsed
         if ('fonts' in document) {
-          document.fonts.load(`16px "${font}"`).catch(() => {});
+          document.fonts.load(`16px "${font}"`).catch(() => { });
         }
       }
     });
@@ -79,7 +79,7 @@ function App() {
       const exif = await extractExif(file);
       const tempImg = new Image();
       const objectUrl = URL.createObjectURL(file);
-      
+
       await new Promise((resolve) => {
         tempImg.onload = resolve;
         tempImg.src = objectUrl;
@@ -94,14 +94,14 @@ function App() {
         exif,
       });
     }
-    
+
     // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleExportBatch = async () => {
     if (state.images.length === 0) return;
-    
+
     // Create an offscreen canvas
     const canvas = document.createElement('canvas');
     const zip = new JSZip();
@@ -122,10 +122,10 @@ function App() {
         img.onload = resolve;
         img.src = image.objectUrl;
       });
-      
+
       // Render to offscreen canvas
       renderPhotoBorder(canvas, image, img, state.config, logoImg);
-      
+
       const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 1.0));
       if (blob) {
         zip.file(`Bordered-${image.file.name}`, blob);
@@ -204,23 +204,23 @@ function App() {
         <header className="top-bar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Layers className="text-blue-500" size={24} />
-            <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Border & EXIF Factory</h1>
+            <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Borderify Images</h1>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
-            <input 
-              type="file" 
-              multiple 
-              accept="image/*" 
-              ref={fileInputRef} 
-              style={{ display: 'none' }} 
-              onChange={handleFileUpload} 
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={handleFileUpload}
             />
-            <input 
-              type="file" 
-              accept=".json" 
-              ref={importPresetRef} 
-              style={{ display: 'none' }} 
-              onChange={loadPresetJSON} 
+            <input
+              type="file"
+              accept=".json"
+              ref={importPresetRef}
+              style={{ display: 'none' }}
+              onChange={loadPresetJSON}
             />
             <button className="btn btn-outline" onClick={() => importPresetRef.current?.click()}>
               <FileJson size={16} /> Load Preset
@@ -230,7 +230,7 @@ function App() {
             </button>
             <div style={{ width: '1px', background: 'var(--surface-border)', margin: '0 4px' }}></div>
             <button className="btn btn-outline" onClick={() => clearAllImages()} disabled={state.images.length === 0} title="Clear All Images">
-              <Trash2 size={16} /> 
+              <Trash2 size={16} />
             </button>
             <button className="btn btn-outline" onClick={() => fileInputRef.current?.click()}>
               <Upload size={16} /> Import Photos
@@ -250,8 +250,8 @@ function App() {
               <Layers size={48} />
               <h2 style={{ marginBottom: '8px' }}>No Images Loaded</h2>
               <p style={{ maxWidth: '300px', fontSize: '14px' }}>Import photos to begin editing borders and extracting EXIF data.</p>
-              <button 
-                className="btn btn-primary" 
+              <button
+                className="btn btn-primary"
                 style={{ marginTop: '20px' }}
                 onClick={() => fileInputRef.current?.click()}
               >
@@ -264,25 +264,25 @@ function App() {
                 <CanvasPreview />
               </div>
               {state.images.length > 1 && (
-                <div style={{ 
-                  height: '80px', 
-                  flexShrink: 0, 
-                  display: 'flex', 
-                  gap: '8px', 
-                  padding: '8px', 
-                  overflowX: 'auto', 
-                  background: 'var(--surface-color)', 
-                  borderTop: '1px solid var(--surface-border)' 
+                <div style={{
+                  height: '80px',
+                  flexShrink: 0,
+                  display: 'flex',
+                  gap: '8px',
+                  padding: '8px',
+                  overflowX: 'auto',
+                  background: 'var(--surface-color)',
+                  borderTop: '1px solid var(--surface-border)'
                 }}>
                   {state.images.map(img => (
-                    <div 
-                      key={img.id} 
-                      onClick={() => setActiveImage(img.id)} 
-                      style={{ 
-                        cursor: 'pointer', 
-                        opacity: state.activeImageId === img.id ? 1 : 0.5, 
-                        border: state.activeImageId === img.id ? '2px solid #3b82f6' : '2px solid transparent', 
-                        borderRadius: '4px', 
+                    <div
+                      key={img.id}
+                      onClick={() => setActiveImage(img.id)}
+                      style={{
+                        cursor: 'pointer',
+                        opacity: state.activeImageId === img.id ? 1 : 0.5,
+                        border: state.activeImageId === img.id ? '2px solid #3b82f6' : '2px solid transparent',
+                        borderRadius: '4px',
                         overflow: 'hidden',
                         height: '100%',
                         flexShrink: 0
@@ -297,7 +297,7 @@ function App() {
           )}
         </div>
       </div>
-      
+
       <SidebarControls />
     </div>
   );
