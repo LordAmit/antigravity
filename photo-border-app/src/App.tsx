@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Upload, Layers, Save, FileJson, Archive, Trash2, Download } from 'lucide-react';
+import { Upload, Layers, Save, FileJson, Archive, Trash2, Download, X } from 'lucide-react';
 import { useStore } from './store';
 import { extractExif } from './exif';
 import { renderPhotoBorder } from './render';
@@ -9,7 +9,7 @@ import CanvasPreview from './CanvasPreview';
 import SidebarControls from './SidebarControls';
 
 function App() {
-  const { state, addImage, updateConfig, clearAllImages, setActiveImage } = useStore();
+  const { state, addImage, updateConfig, clearAllImages, setActiveImage, removeImage } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Dynamically load fonts from Google Fonts for seamless usage
@@ -275,20 +275,36 @@ function App() {
                   borderTop: '1px solid var(--surface-border)'
                 }}>
                   {state.images.map(img => (
-                    <div
-                      key={img.id}
-                      onClick={() => setActiveImage(img.id)}
-                      style={{
-                        cursor: 'pointer',
-                        opacity: state.activeImageId === img.id ? 1 : 0.5,
-                        border: state.activeImageId === img.id ? '2px solid #3b82f6' : '2px solid transparent',
-                        borderRadius: '4px',
-                        overflow: 'hidden',
+                    <div 
+                      key={img.id} 
+                      style={{ 
+                        position: 'relative',
                         height: '100%',
                         flexShrink: 0
                       }}
                     >
-                      <img src={img.objectUrl} style={{ height: '100%', objectFit: 'cover', width: 'auto' }} />
+                      <div 
+                        onClick={() => setActiveImage(img.id)} 
+                        style={{ 
+                          cursor: 'pointer', 
+                          opacity: state.activeImageId === img.id ? 1 : 0.5, 
+                          border: state.activeImageId === img.id ? '2px solid #3b82f6' : '2px solid transparent', 
+                          borderRadius: '4px', 
+                          overflow: 'hidden',
+                          height: '100%',
+                        }}
+                      >
+                        <img src={img.objectUrl} style={{ height: '100%', objectFit: 'cover', width: 'auto' }} />
+                      </div>
+                      <button 
+                        className="thumbnail-remove-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeImage(img.id);
+                        }}
+                      >
+                        <X size={10} />
+                      </button>
                     </div>
                   ))}
                 </div>

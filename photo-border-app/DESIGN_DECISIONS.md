@@ -42,3 +42,11 @@ This document outlines the core technical decisions, trade-offs, and design phil
 **Decision:** EXIF headers are inherently unchangeable to a visual parser. To offer users flexibility, the store supports `customCameraText` and `customLensText` intercept variables. 
 **Trade-offs:** 
 - If a user uses the batch processor and overrides the "Lens", ALL 50 photos in that batch zip will inherit that literal override string. This is accepted behavior to allow unified brand aesthetics across mismatched lens shoots.
+
+## 7. Performance Blur (Optimization for Mobile/Safari)
+
+**Decision:** Background blurring does not occur on the main high-resolution canvas. Instead, we use a "Downsampled Buffer" technique. The image is drawn to a small (max 800px) offscreen canvas, blurred there, and then upscaled back to the main canvas.
+**Trade-offs:**
+- *Pros:* Massive performance improvement. Blurring a 6000px canvas with a high radius is computationally expensive and often causes mobile GPUs (especially Safari/iOS) to fail. Downsampling guarantees compatibility across all devices and provides a naturally smoother blur due to bilinear upscaling.
+- *Cons:* At extremely low blur radii, meticulous observers might notice a minor decrease in "sharpness" compared to a theoretical perfect high-res blur, but for background aesthetics, the difference is negligible.
+
