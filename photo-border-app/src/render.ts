@@ -81,72 +81,23 @@ export const renderPhotoBorder = (
     ctx.fillStyle = config.layout.backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   } else {
-    ctx.save();
-    const coverRatio = Math.max(canvas.width / imgObject.width, canvas.height / imgObject.height);
-    const coverW = imgObject.width * coverRatio;
-    const coverH = imgObject.height * coverRatio;
-    const coverX = (canvas.width - coverW) / 2;
-    const coverY = (canvas.height - coverH) / 2;
-    
-    const blurScale = config.layout.backgroundBlurScale;
-    if (blurScale > 0) {
-      // Create a small buffer for performance blur (around 400-800px max)
-      const bufferScale = Math.min(1, 800 / Math.max(canvas.width, canvas.height));
-      const bW = Math.max(1, Math.floor(canvas.width * bufferScale));
-      const bH = Math.max(1, Math.floor(canvas.height * bufferScale));
+      ctx.save();
+      const coverRatio = Math.max(canvas.width / imgObject.width, canvas.height / imgObject.height);
+      const coverW = imgObject.width * coverRatio;
+      const coverH = imgObject.height * coverRatio;
+      const coverX = (canvas.width - coverW) / 2;
+      const coverY = (canvas.height - coverH) / 2;
       
-      const buffer = document.createElement('canvas');
-      buffer.width = bW;
-      buffer.height = bH;
-      const bCtx = buffer.getContext('2d');
-      
-      if (bCtx) {
-        // Clear background for clean draw
-        bCtx.clearRect(0, 0, bW, bH);
-        
-        const blurPx = (baseLength * blurScale) * bufferScale;
-        const hasFilter = 'filter' in bCtx;
-
-        if (hasFilter && blurPx > 0) {
-          // Standard Strategy: Apply filter BEFORE drawing the image into the buffer
-          // This is the most compatible way for Safari/iOS to handle large blurs
-          bCtx.filter = `blur(${blurPx}px)`;
-          bCtx.drawImage(imgObject, coverX * bufferScale, coverY * bufferScale, coverW * bufferScale, coverH * bufferScale);
-        } else {
-          // Fallback Strategy: Multi-pass Downsampling
-          // Iteratively shrink the image to naturally "blur" it via bilinear filtering
-          let tempW = coverW * bufferScale;
-          let tempH = coverH * bufferScale;
-          let tempX = coverX * bufferScale;
-          let tempY = coverY * bufferScale;
-
-          // Goal: Shrink to a tiny fraction to force massive smoothing
-          const passes = 3;
-          
-          for (let i = 0; i < passes; i++) {
-            bCtx.drawImage(imgObject, tempX, tempY, tempW, tempH);
-            // On each pass, the browser smooths the pixels
-            tempW *= 0.5;
-            tempH *= 0.5;
-            tempX = (bW - tempW) / 2;
-            tempY = (bH - tempH) / 2;
-          }
-          // Draw final results back to fill the buffer
-          bCtx.drawImage(buffer, 0, 0, tempW * 2, tempH * 2, 0, 0, bW, bH);
-        }
-        
-        // Draw small blurred buffer back to main canvas (upscaling adds further smoothness)
-        ctx.drawImage(buffer, 0, 0, canvas.width, canvas.height);
-      }
-    } else {
+      const blurPx = baseLength * config.layout.backgroundBlurScale;
+      ctx.filter = `blur(${blurPx}px)`;
       ctx.drawImage(imgObject, coverX, coverY, coverW, coverH);
-    }
-    
-    if (config.layout.backgroundDimScale > 0) {
-      ctx.fillStyle = `rgba(0, 0, 0, ${config.layout.backgroundDimScale})`;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-    ctx.restore();
+      
+      ctx.filter = 'none';
+      if (config.layout.backgroundDimScale > 0) {
+        ctx.fillStyle = `rgba(0, 0, 0, ${config.layout.backgroundDimScale})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      ctx.restore();
   }
 
   const boxW = tWidth;
@@ -239,7 +190,7 @@ export const renderPhotoBorder = (
 
   ctx.restore();
 
-  const baseSize = Math.max(canvas.width, canvas.height);
+
 
   // EXIF
   if (config.exifPills.show && image.exif) {
@@ -259,13 +210,15 @@ export const renderPhotoBorder = (
     if (exifPills.showDate && date) dataPairs.push({ top: date.toString(), bottom: 'DATE' });
 
     if (dataPairs.length > 0) {
-      const fontSize = baseSize * exifPills.fontSizeScale;
-      const boxHeight = fontSize + (baseSize * exifPills.paddingYScale);
-      const gap = baseSize * 0.02;
+      // Scale based on the card size, not the full backdrop
+      const cardBase = Math.max(blockW, blockH);
+      const fontSize = cardBase * exifPills.fontSizeScale;
+      const boxHeight = fontSize + (cardBase * exifPills.paddingYScale);
+      const gap = cardBase * 0.02;
       
       // Calculate dynamic pill widths
       let totalWidth = 0;
-      const padXPill = baseSize * exifPills.paddingXScale; 
+      const padXPill = cardBase * exifPills.paddingXScale; 
       
       const measuredPairs = dataPairs.map(p => {
         ctx.font = `600 ${fontSize}px "${exifPills.fontFamily.replace(/"/g, '')}", sans-serif`;
@@ -279,35 +232,37 @@ export const renderPhotoBorder = (
       measuredPairs.forEach(p => totalWidth += p.width);
       totalWidth += gap * (measuredPairs.length - 1);
       
-      // Text Grid Anchor for EXIF
-      const padX = canvas.width * 0.05;
-      const padY = canvas.height * 0.05;
-      const anchorPos = getPositionalCoords(canvas.width, canvas.height, exifPills.position, padX, padY);
+      // Anchor to Internal Block (White Card)
+      const cardPadX = blockW * 0.05;
+      const cardPadY = blockH * 0.02; // Keep EXIF low in the lip
+      
+      const relPos = getPositionalCoords(blockW, blockH, exifPills.position, cardPadX, cardPadY);
 
-      // Apply User Offsets
-      const offsetX = exifPills.positionXScale * canvas.width;
-      const offsetY = exifPills.positionYScale * canvas.height;
+      // Apply User Offsets (scaled to card)
+      const offsetX = exifPills.positionXScale * blockW;
+      const offsetY = exifPills.positionYScale * blockH;
 
-      let startX = anchorPos.x + offsetX;
+      let startX = blockX + relPos.x + offsetX;
       if (exifPills.position.includes('Right')) startX -= totalWidth;
       else if (exifPills.position.includes('Center')) startX -= (totalWidth / 2);
       
-      let y = anchorPos.y + offsetY;
-      if (exifPills.position.includes('Top')) y += (boxHeight / 2) + padY; // move down from top edge slightly
-      else if (exifPills.position.includes('Bottom')) y -= (boxHeight / 2);
+      let startY = blockY + relPos.y + offsetY;
+      // Adjust anchor for the pill box height itself
+      if (exifPills.position.includes('Bottom')) startY -= boxHeight;
+      else if (exifPills.position.includes('Top')) startY += 0; // standard top anchor
 
       let currentX = startX;
 
       measuredPairs.forEach((pair) => {
-        ctx.lineWidth = baseSize * exifPills.borderWidthScale;
+        ctx.lineWidth = cardBase * exifPills.borderWidthScale;
         ctx.strokeStyle = exifPills.borderColor;
         ctx.fillStyle = exifPills.boxColor;
 
         ctx.beginPath();
         if (ctx.roundRect) {
-           ctx.roundRect(currentX, y, pair.width, boxHeight, baseSize * 0.005);
+           ctx.roundRect(currentX, startY, pair.width, boxHeight, cardBase * 0.005);
         } else {
-           ctx.rect(currentX, y, pair.width, boxHeight);
+           ctx.rect(currentX, startY, pair.width, boxHeight);
         }
         ctx.fill();
         if (ctx.lineWidth > 0) ctx.stroke();
@@ -318,22 +273,22 @@ export const renderPhotoBorder = (
         // Draw Top Text
         ctx.font = `600 ${fontSize}px "${exifPills.fontFamily.replace(/"/g, '')}", sans-serif`;
         if (exifPills.textStrokeWidthScale > 0) {
-            ctx.lineWidth = baseSize * exifPills.textStrokeWidthScale;
+            ctx.lineWidth = cardBase * exifPills.textStrokeWidthScale;
             ctx.strokeStyle = exifPills.textStrokeColor;
-            ctx.strokeText(pair.top, currentX + pair.width / 2, y + boxHeight * 0.35);
+            ctx.strokeText(pair.top, currentX + pair.width / 2, startY + boxHeight * 0.35);
         }
         ctx.fillStyle = exifPills.textColor;
-        ctx.fillText(pair.top, currentX + pair.width / 2, y + boxHeight * 0.35);
+        ctx.fillText(pair.top, currentX + pair.width / 2, startY + boxHeight * 0.35);
 
         // Draw Bottom Text
         ctx.font = `400 ${fontSize * 0.6}px "${exifPills.fontFamily.replace(/"/g, '')}", sans-serif`;
         if (exifPills.textStrokeWidthScale > 0) {
-            ctx.lineWidth = baseSize * exifPills.textStrokeWidthScale;
+            ctx.lineWidth = cardBase * exifPills.textStrokeWidthScale;
             ctx.strokeStyle = exifPills.textStrokeColor;
-            ctx.strokeText(pair.bottom, currentX + pair.width / 2, y + boxHeight * 0.7);
+            ctx.strokeText(pair.bottom, currentX + pair.width / 2, startY + boxHeight * 0.7);
         }
         ctx.fillStyle = exifPills.textColor + 'aa';
-        ctx.fillText(pair.bottom, currentX + pair.width / 2, y + boxHeight * 0.7);
+        ctx.fillText(pair.bottom, currentX + pair.width / 2, startY + boxHeight * 0.7);
 
         currentX += pair.width + gap;
       });
@@ -343,13 +298,14 @@ export const renderPhotoBorder = (
   // Text Labels & Linked Logo
   if (config.labels && config.labels.length > 0) {
     config.labels.forEach((label) => {
+      const cardBase = Math.max(blockW, blockH);
       let text = label.text
         .replace('{make}', image.exif.make || '')
         .replace('{model}', image.exif.model || '')
         .replace('{Make}', (image.exif.make || '').toUpperCase())
         .replace('{Model}', (image.exif.model || '').toUpperCase());
 
-      const fontSize = baseSize * label.fontSizeScale;
+      const fontSize = cardBase * label.fontSizeScale;
       ctx.font = `${fontSize}px "${label.fontFamily.replace(/"/g, '')}", sans-serif`;
       
       const textMetrics = ctx.measureText(text);
@@ -361,35 +317,36 @@ export const renderPhotoBorder = (
       let gap = 0;
       if (config.logo.dataUrl && logoImgObject) {
          const lRatio = logoImgObject.width / logoImgObject.height;
-         logoDrawH = baseSize * config.logo.sizeScale;
+         logoDrawH = cardBase * config.logo.sizeScale;
          logoDrawW = logoDrawH * lRatio;
-         gap = baseSize * config.logo.gapScale;
+         gap = cardBase * config.logo.gapScale;
       }
 
       const totalGroupWidth = textWidth + (logoDrawW > 0 ? logoDrawW + gap : 0);
 
-      // Align overall group block based on Typography position
-      const padX = canvas.width * label.paddingXScale;
-      const padY = canvas.height * label.paddingYScale;
-      const { x: anchorX, y: anchorY } = getPositionalCoords(canvas.width, canvas.height, label.position, padX, padY);
+      // Anchor to Internal Block (White Card)
+      const cardPadX = blockW * label.paddingXScale;
+      const cardPadY = blockH * label.paddingYScale;
+      
+      const relPos = getPositionalCoords(blockW, blockH, label.position, cardPadX, cardPadY);
 
-      const offsetX = baseSize * (label.positionXScale || 0);
-      const offsetY = baseSize * (label.positionYScale || 0);
+      const offsetX = cardBase * (label.positionXScale || 0);
+      const offsetY = cardBase * (label.positionYScale || 0);
 
-      let startX = anchorX + offsetX;
-      if (label.position.includes('Right')) startX = anchorX + offsetX - totalGroupWidth;
-      else if (label.position.includes('Center')) startX = anchorX + offsetX - (totalGroupWidth / 2);
+      let startX = blockX + relPos.x + offsetX;
+      if (label.position.includes('Right')) startX -= totalGroupWidth;
+      else if (label.position.includes('Center')) startX -= (totalGroupWidth / 2);
 
       let currentX = startX;
 
       // Base Y alignment (middle)
-      let displayY = anchorY + offsetY;
+      let displayY = blockY + relPos.y + offsetY;
       if (label.position.includes('Top')) displayY += fontSize / 2; // Offset since Baseline is middle
       else if (label.position.includes('Bottom')) displayY -= fontSize / 2;
 
       // Draw Logo First (if left)
-      const logoOffsetX = baseSize * (config.logo.offsetXScale || 0);
-      const logoOffsetY = baseSize * (config.logo.offsetYScale || 0);
+      const logoOffsetX = cardBase * (config.logo.offsetXScale || 0);
+      const logoOffsetY = cardBase * (config.logo.offsetYScale || 0);
 
       if (logoDrawW > 0 && config.logo.placement === 'Left of Text' && logoImgObject) {
          ctx.drawImage(logoImgObject, currentX + logoOffsetX, (displayY - (logoDrawH / 2)) + logoOffsetY, logoDrawW, logoDrawH);
@@ -402,7 +359,7 @@ export const renderPhotoBorder = (
         ctx.textBaseline = 'middle';
         
         if (label.strokeWidthScale > 0) {
-          ctx.lineWidth = baseSize * label.strokeWidthScale;
+          ctx.lineWidth = cardBase * label.strokeWidthScale;
           ctx.strokeStyle = label.strokeColor;
           ctx.strokeText(text, currentX, displayY);
         }

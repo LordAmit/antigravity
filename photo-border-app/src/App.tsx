@@ -236,7 +236,7 @@ function App() {
               <Upload size={16} /> Import Photos
             </button>
             <button className="btn btn-outline" onClick={handleExportSingle} disabled={state.images.length === 0}>
-              <Download size={16} /> Export View
+              <Download size={16} /> Save Image
             </button>
             <button className="btn btn-primary" onClick={handleExportBatch} disabled={state.images.length === 0}>
               <Archive size={16} /> Batch Export Zip
@@ -275,28 +275,28 @@ function App() {
                   borderTop: '1px solid var(--surface-border)'
                 }}>
                   {state.images.map(img => (
-                    <div 
-                      key={img.id} 
-                      style={{ 
+                    <div
+                      key={img.id}
+                      style={{
                         position: 'relative',
                         height: '100%',
                         flexShrink: 0
                       }}
                     >
-                      <div 
-                        onClick={() => setActiveImage(img.id)} 
-                        style={{ 
-                          cursor: 'pointer', 
-                          opacity: state.activeImageId === img.id ? 1 : 0.5, 
-                          border: state.activeImageId === img.id ? '2px solid #3b82f6' : '2px solid transparent', 
-                          borderRadius: '4px', 
+                      <div
+                        onClick={() => setActiveImage(img.id)}
+                        style={{
+                          cursor: 'pointer',
+                          opacity: state.activeImageId === img.id ? 1 : 0.5,
+                          border: state.activeImageId === img.id ? '2px solid #3b82f6' : '2px solid transparent',
+                          borderRadius: '4px',
                           overflow: 'hidden',
                           height: '100%',
                         }}
                       >
                         <img src={img.objectUrl} style={{ height: '100%', objectFit: 'cover', width: 'auto' }} />
                       </div>
-                      <button 
+                      <button
                         className="thumbnail-remove-btn"
                         onClick={(e) => {
                           e.stopPropagation();

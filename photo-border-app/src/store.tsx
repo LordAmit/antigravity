@@ -4,8 +4,8 @@ import type { AppState, AppConfig, ImageItem } from './types';
 
 export const defaultConfig: AppConfig = {
   layout: {
-    aspectRatio: "Original",
-    backgroundColor: "#2e2e2e",
+    aspectRatio: "1:1",
+    backgroundColor: "#ffffff",
     backgroundType: 'blurred-image',
     backgroundBlurScale: 0.1,
     backgroundDimScale: 0.3,
@@ -14,7 +14,7 @@ export const defaultConfig: AppConfig = {
     innerBorderColor: "#ffffff",
     innerBorderMode: "custom",
     innerBorderTopScale: 0.02,
-    innerBorderBottomScale: 0.1, // Polaroid style bottom lip
+    innerBorderBottomScale: 0.18, // Deep Polaroid lip for better spacing
     innerBorderSideScale: 0.02,
     imageRadiusScale: 0,
     innerImageRadiusScale: 0,
@@ -26,22 +26,22 @@ export const defaultConfig: AppConfig = {
       id: "1",
       text: "BRAND | {model}",
       fontFamily: "Inter, sans-serif",
-      fontSizeScale: 0.025,
+      fontSizeScale: 0.012, // Elegant, smaller size
       color: "#000000",
       strokeColor: "#000000",
       strokeWidthScale: 0,
       position: "Bottom Center",
       positionXScale: 0,
       positionYScale: 0,
-      paddingYScale: 0.05,
+      paddingYScale: 0.08, // Nested higher in the bottom border
       paddingXScale: 0.5,
     }
   ],
   logo: {
     dataUrl: null,
-    sizeScale: 0.1,
+    sizeScale: 0.08,
     placement: "Right of Text",
-    gapScale: 0.02,
+    gapScale: 0.01,
     offsetXScale: 0,
     offsetYScale: 0,
   },
@@ -61,10 +61,10 @@ export const defaultConfig: AppConfig = {
     textColor: "#000000",
     textStrokeColor: "#000000",
     textStrokeWidthScale: 0,
-    borderColor: "#cccccc",
+    borderColor: "#eeeeee",
     fontFamily: "Inter, sans-serif",
-    fontSizeScale: 0.015,
-    paddingYScale: 0.03,
+    fontSizeScale: 0.008, // Clean, technical detail size
+    paddingYScale: 0.025, // Anchored near the bottom edge
     paddingXScale: 0.03,
     borderWidthScale: 0.001,
   }

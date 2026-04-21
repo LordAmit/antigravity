@@ -74,7 +74,7 @@ const SidebarControls: React.FC = () => {
                   onChange={(e) => updateConfig(c => ({ ...c, layout: { ...c.layout, backgroundType: e.target.value as any } }))}
                 >
                   <option value="color">Solid Color</option>
-                  <option value="blurred-image">Blurred Image</option>
+                  <option value="blurred-image">Blurred Image (Desktop only)</option>
                 </select>
               </div>
 
@@ -147,6 +147,7 @@ const SidebarControls: React.FC = () => {
                         newBottom = side;
                       } else if (mode === 'polaroid') {
                         newTop = side;
+                        newBottom = 0.18; // Default professional Polaroid lip
                       }
                       return { ...c, layout: { ...c.layout, innerBorderMode: mode, innerBorderTopScale: newTop, innerBorderBottomScale: newBottom } };
                     });
