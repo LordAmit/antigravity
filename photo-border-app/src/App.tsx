@@ -204,7 +204,7 @@ function App() {
         <header className="top-bar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Layers className="text-blue-500" size={24} />
-            <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Borderify Images</h1>
+            <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Borderify Images v1.0</h1>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             <input
