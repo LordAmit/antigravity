@@ -39,17 +39,20 @@ export interface LayoutSettings {
 
 export interface TextLabel {
   id: string;
+  show: boolean;
   text: string; // Supports templates like "{Make} | {Model}"
   fontFamily: string;
   fontSizeScale: number; // relative to short side
   color: string;
   strokeColor: string;
   strokeWidthScale: number;
-  position: "Top Left" | "Top Center" | "Top Right" | "Bottom Left" | "Bottom Center" | "Bottom Right" | "Center";
+  position: "Top Left" | "Top Center" | "Top Right" | "Middle Left" | "Center" | "Middle Right" | "Bottom Left" | "Bottom Center" | "Bottom Right";
   positionXScale: number;
   positionYScale: number;
   paddingYScale: number;
   paddingXScale: number;
+  fontWeight?: string; // e.g. "normal", "bold", "700"
+  fontStyle?: string;  // e.g. "normal", "italic"
   customFontDataUrl?: string; // stores base64 of uploaded font for preset persistence
 }
 
@@ -71,7 +74,7 @@ export interface ExifPillSettings {
   showLens: boolean;
   showCamera: boolean;
   showDate: boolean;
-  position: "Top Left" | "Top Center" | "Top Right" | "Bottom Left" | "Bottom Center" | "Bottom Right" | "Center";
+  position: "Top Left" | "Top Center" | "Top Right" | "Middle Left" | "Center" | "Middle Right" | "Bottom Left" | "Bottom Center" | "Bottom Right";
   positionXScale: number; 
   positionYScale: number; 
   boxColor: string;
@@ -84,6 +87,7 @@ export interface ExifPillSettings {
   paddingYScale: number;
   paddingXScale: number;
   borderWidthScale: number;
+  internalPaddingScale: number;
   customCameraText?: string;
   customLensText?: string;
 }

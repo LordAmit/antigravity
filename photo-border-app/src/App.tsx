@@ -202,11 +202,11 @@ function App() {
     <div className="app-container">
       <div className="workspace">
         <header className="top-bar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Layers className="text-blue-500" size={24} />
-            <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Borderify Images v1.0</h1>
+          <div className="brand">
+            <Layers className="logo-icon" size={24} />
+            <h1 className="brand-name">Borderify</h1>
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div className="actions">
             <input
               type="file"
               multiple
@@ -222,25 +222,33 @@ function App() {
               style={{ display: 'none' }}
               onChange={loadPresetJSON}
             />
-            <button className="btn btn-outline" onClick={() => importPresetRef.current?.click()}>
-              <FileJson size={16} /> Load Preset
-            </button>
-            <button className="btn btn-outline" onClick={savePresetJSON}>
-              <Save size={16} /> Save Preset
-            </button>
-            <div style={{ width: '1px', background: 'var(--surface-border)', margin: '0 4px' }}></div>
-            <button className="btn btn-outline" onClick={() => clearAllImages()} disabled={state.images.length === 0} title="Clear All Images">
-              <Trash2 size={16} />
-            </button>
-            <button className="btn btn-outline" onClick={() => fileInputRef.current?.click()}>
-              <Upload size={16} /> Import Photos
-            </button>
-            <button className="btn btn-outline" onClick={handleExportSingle} disabled={state.images.length === 0}>
-              <Download size={16} /> Save Image
-            </button>
-            <button className="btn btn-primary" onClick={handleExportBatch} disabled={state.images.length === 0}>
-              <Archive size={16} /> Batch Export Zip
-            </button>
+            <div className="action-group secondary">
+              <button className="icon-btn" onClick={() => importPresetRef.current?.click()} title="Load Preset">
+                <FileJson size={18} />
+              </button>
+              <button className="icon-btn" onClick={savePresetJSON} title="Save Preset">
+                <Save size={18} />
+              </button>
+              <button className="icon-btn destructive" onClick={() => clearAllImages()} disabled={state.images.length === 0} title="Clear All Photos">
+                <Trash2 size={18} />
+              </button>
+            </div>
+            
+            <div className="divider"></div>
+            
+            <div className="action-group primary">
+              <button className="btn btn-outline" onClick={() => fileInputRef.current?.click()}>
+                <Upload size={16} /> Browse
+              </button>
+              <button className="btn btn-outline" onClick={handleExportSingle} disabled={state.images.length === 0}>
+                <Download size={16} /> Save
+              </button>
+              {state.images.length > 1 && (
+                <button className="btn btn-primary" onClick={handleExportBatch}>
+                  <Archive size={16} /> Save All
+                </button>
+              )}
+            </div>
           </div>
         </header>
 
@@ -248,14 +256,14 @@ function App() {
           {state.images.length === 0 ? (
             <div className="empty-state glass-panel" style={{ padding: '40px', borderRadius: '16px' }}>
               <Layers size={48} />
-              <h2 style={{ marginBottom: '8px' }}>No Images Loaded</h2>
-              <p style={{ maxWidth: '300px', fontSize: '14px' }}>Import photos to begin editing borders and extracting EXIF data.</p>
+              <h2 style={{ marginBottom: '8px' }}>No Photos Loaded</h2>
+              <p style={{ maxWidth: '300px', fontSize: '14px' }}>Start framing your photos.</p>
               <button
                 className="btn btn-primary"
                 style={{ marginTop: '20px' }}
                 onClick={() => fileInputRef.current?.click()}
               >
-                Choose Files
+                Choose Photos
               </button>
             </div>
           ) : (

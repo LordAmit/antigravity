@@ -7,10 +7,10 @@ export const defaultConfig: AppConfig = {
     aspectRatio: "1:1",
     backgroundColor: "#ffffff",
     backgroundType: 'blurred-image',
-    backgroundBlurScale: 0.1,
+    backgroundBlurScale: 0.02,
     backgroundDimScale: 0.3,
     borderWidthScale: 0.05,
-    imagePaddingScale: 0,
+    imagePaddingScale: 0.02,
     innerBorderColor: "#ffffff",
     innerBorderMode: "custom",
     innerBorderTopScale: 0.02,
@@ -24,24 +24,27 @@ export const defaultConfig: AppConfig = {
   labels: [
     {
       id: "1",
-      text: "BRAND | {model}",
-      fontFamily: "Inter, sans-serif",
-      fontSizeScale: 0.012, // Elegant, smaller size
-      color: "#000000",
+      show: true,
+      text: "**{make}** *{model}*",
+      fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+      fontSizeScale: 0.022, 
+      color: "#1e293b",
       strokeColor: "#000000",
       strokeWidthScale: 0,
       position: "Bottom Center",
       positionXScale: 0,
       positionYScale: 0,
-      paddingYScale: 0.08, // Nested higher in the bottom border
-      paddingXScale: 0.5,
+      paddingYScale: 0,
+      paddingXScale: 0.1,
+      fontWeight: "normal",
+      fontStyle: "normal",
     }
   ],
   logo: {
     dataUrl: null,
     sizeScale: 0.08,
     placement: "Right of Text",
-    gapScale: 0.01,
+    gapScale: 0.005,
     offsetXScale: 0,
     offsetYScale: 0,
   },
@@ -58,15 +61,16 @@ export const defaultConfig: AppConfig = {
     positionXScale: 0,
     positionYScale: 0,
     boxColor: "#ffffff",
-    textColor: "#000000",
+    textColor: "#1e293b",
     textStrokeColor: "#000000",
     textStrokeWidthScale: 0,
-    borderColor: "#eeeeee",
-    fontFamily: "Inter, sans-serif",
-    fontSizeScale: 0.008, // Clean, technical detail size
-    paddingYScale: 0.025, // Anchored near the bottom edge
-    paddingXScale: 0.03,
+    borderColor: "#e2e8f0",
+    fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+    fontSizeScale: 0.012,
+    paddingYScale: 0.04,
+    paddingXScale: 0.1,
     borderWidthScale: 0.001,
+    internalPaddingScale: 0.8,
   }
 };
 

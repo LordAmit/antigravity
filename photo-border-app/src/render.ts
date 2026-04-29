@@ -1,34 +1,34 @@
 import type { AppConfig, ImageItem } from './types';
 
-// Helper to calculate X/Y based on a 9-point grid relative to canvas size
-function getPositionalCoords(
-  canvasW: number,
-  canvasH: number,
+// Helper to calculate X/Y based on a 9-point grid relative to a container
+type Alignment = 'left' | 'center' | 'right';
+type VAlignment = 'top' | 'middle' | 'bottom';
+
+function getPreciseAnchor(
+  containerW: number,
+  containerH: number,
+  imgH: number,
+  padTop: number,
+  padBottom: number,
+  padSide: number,
   position: string,
-  padX: number,
-  padY: number
-) {
-  let x = canvasW / 2;
-  let y = canvasH - padY; 
-  
-  if (position.includes('Center') && position !== 'Center') {
-    x = canvasW / 2;
-  } else if (position.includes('Right')) {
-    x = canvasW - padX; 
-  } else if (position.includes('Left')) {
-    x = padX;
-  } else if (position === 'Center') {
-    x = canvasW / 2;
-    y = canvasH / 2;
-  }
+  customPadX: number,
+  customPadY: number
+): { x: number; y: number; align: Alignment; vAlign: VAlignment } {
+  // Coordinates are relative to the top-left of the entire card block (container)
+  const map: Record<string, { x: number; y: number; align: Alignment; vAlign: VAlignment }> = {
+    'Top Left':      { x: customPadX || (padSide / 2),     y: customPadY || (padTop / 2),      align: 'left',   vAlign: 'middle' },
+    'Top Center':    { x: containerW / 2,                  y: customPadY || (padTop / 2),      align: 'center', vAlign: 'middle' },
+    'Top Right':     { x: containerW - (customPadX || (padSide / 2)), y: customPadY || (padTop / 2), align: 'right',  vAlign: 'middle' },
+    'Middle Left':   { x: customPadX || (padSide / 2),     y: padTop + (imgH / 2),             align: 'left',   vAlign: 'middle' },
+    'Center':        { x: containerW / 2,                  y: padTop + (imgH / 2),             align: 'center', vAlign: 'middle' },
+    'Middle Right':  { x: containerW - (customPadX || (padSide / 2)), y: padTop + (imgH / 2),    align: 'right',  vAlign: 'middle' },
+    'Bottom Left':   { x: customPadX || (padSide / 2),     y: containerH - (customPadY || (padBottom / 2)), align: 'left', vAlign: 'middle' },
+    'Bottom Center': { x: containerW / 2,                  y: containerH - (customPadY || (padBottom / 2)), align: 'center', vAlign: 'middle' },
+    'Bottom Right':  { x: containerW - (customPadX || (padSide / 2)), y: containerH - (customPadY || (padBottom / 2)), align: 'right', vAlign: 'middle' },
+  };
 
-  if (position.includes('Top')) {
-    y = padY;
-  } else if (position.includes('Bottom')) {
-    y = canvasH - padY;
-  }
-
-  return { x, y };
+  return map[position] || map['Bottom Center'];
 }
 
 export const renderPhotoBorder = (
@@ -36,12 +36,12 @@ export const renderPhotoBorder = (
   image: ImageItem,
   imgObject: HTMLImageElement,
   config: AppConfig,
-  logoImgObject?: HTMLImageElement | null
+  _logoImgObject?: HTMLImageElement | null
 ) => {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  const maxRes = 6000;
+  const maxRes = 8000;
   let scaleLimit = 1;
   const longestEdge = Math.max(imgObject.width, imgObject.height);
   if (longestEdge > maxRes) {
@@ -68,15 +68,9 @@ export const renderPhotoBorder = (
   canvas.height = cHeight;
 
   const minEdge = Math.min(cWidth, cHeight);
-  const borderPadding = minEdge * config.layout.borderWidthScale;
+  const outerPadding = minEdge * config.layout.borderWidthScale;
 
-  let tWidth = cWidth - (borderPadding * 2);
-  let tHeight = cHeight - (borderPadding * 2);
-
-  // safe clamp exactly at center to prevent negative scale crashes
-  if (tWidth < 10) tWidth = 10;
-  if (tHeight < 10) tHeight = 10;
-
+  // Background
   if (config.layout.backgroundType === 'color') {
     ctx.fillStyle = config.layout.backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -100,17 +94,18 @@ export const renderPhotoBorder = (
       ctx.restore();
   }
 
-  const boxW = tWidth;
-  const boxH = tHeight;
-  const imgRatio = imgObject.width / imgObject.height;
+  // Calculate sizes for the inner card and photo
+  const boxW = cWidth - (outerPadding * 2);
+  const boxH = cHeight - (outerPadding * 2);
   
-  // calculate inner paddings
   const innerPadTop = baseLength * config.layout.innerBorderTopScale;
   const innerPadBottom = baseLength * config.layout.innerBorderBottomScale;
   const innerPadSide = baseLength * config.layout.innerBorderSideScale;
 
-  const availableImgW = boxW - (innerPadSide * 2);
-  const availableImgH = boxH - (innerPadTop + innerPadBottom);
+  const imgRatio = imgObject.width / imgObject.height;
+  const photoPadding = baseLength * (config.layout.imagePaddingScale || 0);
+  const availableImgW = boxW - (innerPadSide * 2) - (photoPadding * 2);
+  const availableImgH = boxH - (innerPadTop + innerPadBottom) - (photoPadding * 2);
   
   let drawImgW, drawImgH;
   if (imgRatio > availableImgW / availableImgH) {
@@ -121,12 +116,13 @@ export const renderPhotoBorder = (
     drawImgW = availableImgH * imgRatio;
   }
 
-  const blockW = drawImgW + (innerPadSide * 2);
-  const blockH = drawImgH + innerPadTop + innerPadBottom;
+  const cardW = drawImgW + (innerPadSide * 2) + (photoPadding * 2);
+  const cardH = drawImgH + innerPadTop + innerPadBottom + (photoPadding * 2);
 
-  const blockX = (canvas.width - blockW) / 2;
-  const blockY = (canvas.height - blockH) / 2;
+  const cardX = (canvas.width - cardW) / 2;
+  const cardY = (canvas.height - cardH) / 2;
 
+  // Draw Inner Card Border (White block)
   ctx.save();
   const radius = baseLength * config.layout.imageRadiusScale;
   const shadowBlur = baseLength * config.layout.imageShadowBlurScale;
@@ -137,88 +133,80 @@ export const renderPhotoBorder = (
     ctx.shadowOffsetY = shadowBlur * 0.3; 
   }
 
-  // Ensure inner border relies on its color
   ctx.fillStyle = config.layout.innerBorderColor;
   ctx.beginPath();
   if (ctx.roundRect && radius > 0) {
-     ctx.roundRect(blockX, blockY, blockW, blockH, radius);
+      ctx.roundRect(cardX, cardY, cardW, cardH, radius);
   } else {
-     ctx.rect(blockX, blockY, blockW, blockH);
+      ctx.rect(cardX, cardY, cardW, cardH);
   }
-  
-  ctx.fill(); // Fill inner border block (and draws shadow)
+  ctx.fill();
+  ctx.restore();
 
-  if (shadowBlur > 0) {
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-  }
-
-  if (radius > 0) {
-    ctx.clip(); // restrict image bounds
-  }
-  
-  // Finally draw image on top of inner border block
-  const drawX = blockX + innerPadSide;
-  const drawY = blockY + innerPadTop;
-  const innerRadius = baseLength * (config.layout.innerImageRadiusScale || 0);
-  const innerShadow = baseLength * (config.layout.innerImageShadowBlurScale || 0);
+  // Draw Actual Photo
+  const photoX = cardX + innerPadSide + photoPadding;
+  const photoY = cardY + innerPadTop + photoPadding;
+  const photoRadius = baseLength * (config.layout.innerImageRadiusScale || 0);
+  const photoShadow = baseLength * (config.layout.innerImageShadowBlurScale || 0);
 
   ctx.save();
   ctx.beginPath();
-  if (ctx.roundRect && innerRadius > 0) {
-      ctx.roundRect(drawX, drawY, drawImgW, drawImgH, innerRadius);
+  if (ctx.roundRect && photoRadius > 0) {
+      ctx.roundRect(photoX, photoY, drawImgW, drawImgH, photoRadius);
   } else {
-      ctx.rect(drawX, drawY, drawImgW, drawImgH);
+      ctx.rect(photoX, photoY, drawImgW, drawImgH);
   }
 
-  if (innerShadow > 0) {
+  if (photoShadow > 0) {
+      ctx.save();
       ctx.shadowColor = 'rgba(0,0,0,0.5)';
-      ctx.shadowBlur = innerShadow;
-      ctx.shadowOffsetY = innerShadow * 0.3;
+      ctx.shadowBlur = photoShadow;
+      ctx.shadowOffsetY = photoShadow * 0.3;
       ctx.fillStyle = '#ffffff';
-      ctx.fill(); // fills rect to cast a proper physical shadow behind inner image
-      // disable shadow so drawing the actual image doesn't cast double overlay
-      ctx.shadowBlur = 0;
-      ctx.shadowColor = 'transparent';
+      ctx.fill();
+      ctx.restore();
   }
 
-  if (innerRadius > 0) {
+  if (photoRadius > 0) {
       ctx.clip();
   }
-  ctx.drawImage(imgObject, drawX, drawY, drawImgW, drawImgH);
+  ctx.drawImage(imgObject, photoX, photoY, drawImgW, drawImgH);
   ctx.restore();
 
-  ctx.restore();
+  // Resolve Templates
+  const resolveTemplate = (raw: string) => {
+    return raw
+      .replace(/{make}/gi, String(image.exif.make || ''))
+      .replace(/{model}/gi, String(image.exif.model || ''))
+      .replace(/{lens}/gi, String(image.exif.lensModel || ''))
+      .replace(/{iso}/gi, String(image.exif.iso || ''))
+      .replace(/{focal}/gi, String(image.exif.focalLength || ''))
+      .replace(/{f}/gi, String(image.exif.fNumber || ''))
+      .replace(/{shutter}/gi, String(image.exif.exposureTime || ''))
+      .replace(/{date}/gi, String(image.exif.date || ''))
+      .trim();
+  };
 
-
-
-  // EXIF
+  // EXIF Pills
   if (config.exifPills.show && image.exif) {
     const { exifPills } = config;
-    const { focalLength, fNumber, iso, exposureTime, lensModel, make, model, date } = image.exif;
-    
-    const finalCameraText = exifPills.customCameraText || [make, model].filter(Boolean).join(' ');
-    const finalLensText = exifPills.customLensText || lensModel;
-
     const dataPairs = [];
-    if (exifPills.showFocal && focalLength) dataPairs.push({ top: focalLength.toString(), bottom: 'mm' });
-    if (exifPills.showAperture && fNumber) dataPairs.push({ top: fNumber.toString(), bottom: 'F' });
-    if (exifPills.showIso && iso) dataPairs.push({ top: iso.toString(), bottom: 'ISO' });
-    if (exifPills.showShutter && exposureTime) dataPairs.push({ top: exposureTime.toString(), bottom: 'S' });
-    if (exifPills.showLens && finalLensText) dataPairs.push({ top: finalLensText, bottom: 'LENS' });
-    if (exifPills.showCamera && finalCameraText) dataPairs.push({ top: finalCameraText, bottom: 'CAMERA' });
-    if (exifPills.showDate && date) dataPairs.push({ top: date.toString(), bottom: 'DATE' });
+    if (exifPills.showFocal && image.exif.focalLength) dataPairs.push({ top: image.exif.focalLength.toString(), bottom: 'mm' });
+    if (exifPills.showAperture && image.exif.fNumber) dataPairs.push({ top: image.exif.fNumber.toString(), bottom: 'F' });
+    if (exifPills.showIso && image.exif.iso) dataPairs.push({ top: image.exif.iso.toString(), bottom: 'ISO' });
+    if (exifPills.showShutter && image.exif.exposureTime) dataPairs.push({ top: image.exif.exposureTime.toString(), bottom: 'S' });
+    if (exifPills.showLens && image.exif.lensModel) dataPairs.push({ top: resolveTemplate(exifPills.customLensText || '{lens}'), bottom: 'LENS' });
+    if (exifPills.showCamera && (image.exif.make || image.exif.model)) dataPairs.push({ top: resolveTemplate(exifPills.customCameraText || '{make} {model}'), bottom: 'CAMERA' });
+    if (exifPills.showDate && image.exif.date) dataPairs.push({ top: image.exif.date.toString(), bottom: 'DATE' });
 
     if (dataPairs.length > 0) {
-      // Scale based on the card size, not the full backdrop
-      const cardBase = Math.max(blockW, blockH);
-      const fontSize = cardBase * exifPills.fontSizeScale;
-      const boxHeight = fontSize + (cardBase * exifPills.paddingYScale);
-      const gap = cardBase * 0.02;
+      const fontSize = baseLength * exifPills.fontSizeScale;
+      const boxPadding = fontSize * (exifPills.internalPaddingScale || 0.5);
+      const boxHeight = fontSize * 1.8;
+      const gap = baseLength * 0.01;
       
-      // Calculate dynamic pill widths
       let totalWidth = 0;
-      const padXPill = cardBase * exifPills.paddingXScale; 
+      const padXPill = boxPadding * 2; 
       
       const measuredPairs = dataPairs.map(p => {
         ctx.font = `600 ${fontSize}px "${exifPills.fontFamily.replace(/"/g, '')}", sans-serif`;
@@ -232,60 +220,52 @@ export const renderPhotoBorder = (
       measuredPairs.forEach(p => totalWidth += p.width);
       totalWidth += gap * (measuredPairs.length - 1);
       
-      // Anchor to Internal Block (White Card)
-      const cardPadX = blockW * 0.05;
-      const cardPadY = blockH * 0.02; // Keep EXIF low in the lip
+      const anchor = getPreciseAnchor(
+        cardW, cardH, drawImgH, 
+        innerPadTop, innerPadBottom, innerPadSide, 
+        exifPills.position, 
+        baseLength * exifPills.paddingXScale, 
+        baseLength * exifPills.paddingYScale
+      );
       
-      const relPos = getPositionalCoords(blockW, blockH, exifPills.position, cardPadX, cardPadY);
+      const offsetX = exifPills.positionXScale * baseLength;
+      const offsetY = exifPills.positionYScale * baseLength;
 
-      // Apply User Offsets (scaled to card)
-      const offsetX = exifPills.positionXScale * blockW;
-      const offsetY = exifPills.positionYScale * blockH;
+      let startX = cardX + anchor.x + offsetX;
+      if (anchor.align === 'right') startX -= totalWidth;
+      else if (anchor.align === 'center') startX -= (totalWidth / 2);
 
-      let startX = blockX + relPos.x + offsetX;
-      if (exifPills.position.includes('Right')) startX -= totalWidth;
-      else if (exifPills.position.includes('Center')) startX -= (totalWidth / 2);
-      
-      let startY = blockY + relPos.y + offsetY;
-      // Adjust anchor for the pill box height itself
-      if (exifPills.position.includes('Bottom')) startY -= boxHeight;
-      else if (exifPills.position.includes('Top')) startY += 0; // standard top anchor
+      let startY = cardY + anchor.y + offsetY;
+      if (anchor.vAlign === 'middle') startY -= (boxHeight / 2);
+      else if (anchor.vAlign === 'bottom') startY -= boxHeight;
 
       let currentX = startX;
-
       measuredPairs.forEach((pair) => {
-        ctx.lineWidth = cardBase * exifPills.borderWidthScale;
+        ctx.lineWidth = baseLength * exifPills.borderWidthScale;
         ctx.strokeStyle = exifPills.borderColor;
         ctx.fillStyle = exifPills.boxColor;
-
         ctx.beginPath();
-        if (ctx.roundRect) {
-           ctx.roundRect(currentX, startY, pair.width, boxHeight, cardBase * 0.005);
-        } else {
-           ctx.rect(currentX, startY, pair.width, boxHeight);
-        }
+        if (ctx.roundRect) ctx.roundRect(currentX, startY, pair.width, boxHeight, baseLength * 0.005);
+        else ctx.rect(currentX, startY, pair.width, boxHeight);
         ctx.fill();
         if (ctx.lineWidth > 0) ctx.stroke();
 
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-
-        // Draw Top Text
         ctx.font = `600 ${fontSize}px "${exifPills.fontFamily.replace(/"/g, '')}", sans-serif`;
         if (exifPills.textStrokeWidthScale > 0) {
-            ctx.lineWidth = cardBase * exifPills.textStrokeWidthScale;
-            ctx.strokeStyle = exifPills.textStrokeColor;
-            ctx.strokeText(pair.top, currentX + pair.width / 2, startY + boxHeight * 0.35);
+          ctx.lineWidth = baseLength * exifPills.textStrokeWidthScale;
+          ctx.strokeStyle = exifPills.textStrokeColor;
+          ctx.strokeText(pair.top, currentX + pair.width / 2, startY + boxHeight * 0.35);
         }
         ctx.fillStyle = exifPills.textColor;
         ctx.fillText(pair.top, currentX + pair.width / 2, startY + boxHeight * 0.35);
 
-        // Draw Bottom Text
         ctx.font = `400 ${fontSize * 0.6}px "${exifPills.fontFamily.replace(/"/g, '')}", sans-serif`;
         if (exifPills.textStrokeWidthScale > 0) {
-            ctx.lineWidth = cardBase * exifPills.textStrokeWidthScale;
-            ctx.strokeStyle = exifPills.textStrokeColor;
-            ctx.strokeText(pair.bottom, currentX + pair.width / 2, startY + boxHeight * 0.7);
+          ctx.lineWidth = baseLength * (exifPills.textStrokeWidthScale * 0.6);
+          ctx.strokeStyle = exifPills.textStrokeColor;
+          ctx.strokeText(pair.bottom, currentX + pair.width / 2, startY + boxHeight * 0.7);
         }
         ctx.fillStyle = exifPills.textColor + 'aa';
         ctx.fillText(pair.bottom, currentX + pair.width / 2, startY + boxHeight * 0.7);
@@ -295,84 +275,84 @@ export const renderPhotoBorder = (
     }
   }
 
-  // Text Labels & Linked Logo
-  if (config.labels && config.labels.length > 0) {
-    config.labels.forEach((label) => {
-      const cardBase = Math.max(blockW, blockH);
-      let text = label.text
-        .replace('{make}', image.exif.make || '')
-        .replace('{model}', image.exif.model || '')
-        .replace('{Make}', (image.exif.make || '').toUpperCase())
-        .replace('{Model}', (image.exif.model || '').toUpperCase());
-
-      const fontSize = cardBase * label.fontSizeScale;
-      ctx.font = `${fontSize}px "${label.fontFamily.replace(/"/g, '')}", sans-serif`;
-      
-      const textMetrics = ctx.measureText(text);
-      const textWidth = textMetrics.width;
-
-      // Group Measurement for Logo + Gap
-      let logoDrawW = 0;
-      let logoDrawH = 0;
-      let gap = 0;
-      if (config.logo.dataUrl && logoImgObject) {
-         const lRatio = logoImgObject.width / logoImgObject.height;
-         logoDrawH = cardBase * config.logo.sizeScale;
-         logoDrawW = logoDrawH * lRatio;
-         gap = cardBase * config.logo.gapScale;
-      }
-
-      const totalGroupWidth = textWidth + (logoDrawW > 0 ? logoDrawW + gap : 0);
-
-      // Anchor to Internal Block (White Card)
-      const cardPadX = blockW * label.paddingXScale;
-      const cardPadY = blockH * label.paddingYScale;
-      
-      const relPos = getPositionalCoords(blockW, blockH, label.position, cardPadX, cardPadY);
-
-      const offsetX = cardBase * (label.positionXScale || 0);
-      const offsetY = cardBase * (label.positionYScale || 0);
-
-      let startX = blockX + relPos.x + offsetX;
-      if (label.position.includes('Right')) startX -= totalGroupWidth;
-      else if (label.position.includes('Center')) startX -= (totalGroupWidth / 2);
-
-      let currentX = startX;
-
-      // Base Y alignment (middle)
-      let displayY = blockY + relPos.y + offsetY;
-      if (label.position.includes('Top')) displayY += fontSize / 2; // Offset since Baseline is middle
-      else if (label.position.includes('Bottom')) displayY -= fontSize / 2;
-
-      // Draw Logo First (if left)
-      const logoOffsetX = cardBase * (config.logo.offsetXScale || 0);
-      const logoOffsetY = cardBase * (config.logo.offsetYScale || 0);
-
-      if (logoDrawW > 0 && config.logo.placement === 'Left of Text' && logoImgObject) {
-         ctx.drawImage(logoImgObject, currentX + logoOffsetX, (displayY - (logoDrawH / 2)) + logoOffsetY, logoDrawW, logoDrawH);
-         currentX += logoDrawW + gap;
-      }
-
-      // Draw Brand Text Core
-      if (textWidth > 0) {
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        
-        if (label.strokeWidthScale > 0) {
-          ctx.lineWidth = cardBase * label.strokeWidthScale;
-          ctx.strokeStyle = label.strokeColor;
-          ctx.strokeText(text, currentX, displayY);
-        }
-        ctx.fillStyle = label.color;
-        ctx.fillText(text, currentX, displayY);
-
-        currentX += textWidth + gap;
-      }
-
-      // Draw Logo Next (if right)
-      if (logoDrawW > 0 && config.logo.placement === 'Right of Text' && logoImgObject) {
-         ctx.drawImage(logoImgObject, currentX + logoOffsetX, (displayY - (logoDrawH / 2)) + logoOffsetY, logoDrawW, logoDrawH);
-      }
+  // Labels
+  config.labels.forEach((label) => {
+    if (!label.show || !label.text) return;
+    const text = resolveTemplate(label.text);
+    const fontSize = baseLength * label.fontSizeScale;
+    const globalWeight = label.fontWeight || 'normal';
+    const globalStyle = label.fontStyle || 'normal';
+    
+    // Parse rich text segments
+    const segments = text.split(/(\*\*.*?\*\*|\*.*?\*)/g).filter(Boolean).map(s => {
+      if (s.startsWith('**') && s.endsWith('**')) return { text: s.slice(2, -2), bold: true, italic: false };
+      if (s.startsWith('*') && s.endsWith('*')) return { text: s.slice(1, -1), bold: false, italic: true };
+      return { text: s, bold: false, italic: false };
     });
-  }
+
+    // Measure total width
+    let textWidth = 0;
+    segments.forEach(seg => {
+      const weight = seg.bold ? 'bold' : globalWeight;
+      const style = seg.italic ? 'italic' : globalStyle;
+      ctx.font = `${style} ${weight} ${fontSize}px ${label.fontFamily}, sans-serif`;
+      textWidth += ctx.measureText(seg.text).width;
+    });
+
+    let logoW = 0, logoH = 0, logoGap = 0;
+    if (config.logo.dataUrl && _logoImgObject) {
+       logoH = baseLength * config.logo.sizeScale;
+       logoW = logoH * (_logoImgObject.width / _logoImgObject.height);
+       logoGap = baseLength * config.logo.gapScale;
+    }
+
+    const totalW = textWidth + (logoW > 0 ? logoW + logoGap : 0);
+    const anchor = getPreciseAnchor(
+      cardW, cardH, drawImgH, 
+      innerPadTop, innerPadBottom, innerPadSide, 
+      label.position, 
+      baseLength * label.paddingXScale, 
+      baseLength * label.paddingYScale
+    );
+
+    const offsetX = baseLength * (label.positionXScale || 0);
+    const offsetY = baseLength * (label.positionYScale || 0);
+
+    let startX = cardX + anchor.x + offsetX;
+    if (anchor.align === 'right') startX -= totalW;
+    else if (anchor.align === 'center') startX -= (totalW / 2);
+
+    let drawY = cardY + anchor.y + offsetY;
+    let currentX = startX;
+
+    const logoOffsetX = baseLength * (config.logo.offsetXScale || 0);
+    const logoOffsetY = baseLength * (config.logo.offsetYScale || 0);
+
+    if (logoW > 0 && config.logo.placement === 'Left of Text' && _logoImgObject) {
+       ctx.drawImage(_logoImgObject, currentX + logoOffsetX, drawY - (logoH / 2) + logoOffsetY, logoW, logoH);
+       currentX += logoW + logoGap;
+    }
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    
+    segments.forEach(seg => {
+      const weight = seg.bold ? 'bold' : globalWeight;
+      const style = seg.italic ? 'italic' : globalStyle;
+      ctx.font = `${style} ${weight} ${fontSize}px ${label.fontFamily}, sans-serif`;
+      
+      if (label.strokeWidthScale > 0) {
+        ctx.lineWidth = baseLength * label.strokeWidthScale;
+        ctx.strokeStyle = label.strokeColor;
+        ctx.strokeText(seg.text, currentX, drawY);
+      }
+      ctx.fillStyle = label.color;
+      ctx.fillText(seg.text, currentX, drawY);
+      currentX += ctx.measureText(seg.text).width;
+    });
+
+    if (logoW > 0 && config.logo.placement === 'Right of Text' && _logoImgObject) {
+       ctx.drawImage(_logoImgObject, currentX + logoGap + logoOffsetX, drawY - (logoH / 2) + logoOffsetY, logoW, logoH);
+    }
+  });
 };
