@@ -8,6 +8,8 @@ import { v4 as uuidv4 } from 'uuid';
 import CanvasPreview from './CanvasPreview';
 import SidebarControls from './SidebarControls';
 
+import piexif from 'piexifjs';
+
 function App() {
   const { state, addImage, updateConfig, clearAllImages, setActiveImage, removeImage } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -73,6 +75,28 @@ function App() {
       const file = files[i];
       if (!file.type.startsWith('image/')) continue;
 
+      let rawExifStr: string | null = null;
+      if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+        const reader = new FileReader();
+        rawExifStr = await new Promise((resolve) => {
+          reader.onload = (e) => {
+            try {
+              const dataUrl = e.target?.result as string;
+              const exifObj = piexif.load(dataUrl);
+              const exifStr = piexif.dump(exifObj);
+              if (exifStr && exifStr !== "Exif\x00\x00MM\x00*\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00") {
+                  resolve(exifStr);
+              } else {
+                  resolve(null);
+              }
+            } catch (err) {
+              resolve(null);
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
       const exif = await extractExif(file);
       const tempImg = new Image();
       const objectUrl = URL.createObjectURL(file);
@@ -89,6 +113,7 @@ function App() {
         width: tempImg.width,
         height: tempImg.height,
         exif,
+        rawExifStr,
       });
     }
   };
@@ -110,6 +135,21 @@ function App() {
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+  };
+
+  const exportImageWithExif = async (canvas: HTMLCanvasElement, rawExifStr?: string | null): Promise<Blob | null> => {
+    const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
+    if (rawExifStr) {
+      try {
+        const newImageWithExif = piexif.insert(rawExifStr, dataUrl);
+        const res = await fetch(newImageWithExif);
+        return await res.blob();
+      } catch (e) {
+        console.error("Failed to insert EXIF", e);
+      }
+    }
+    const res = await fetch(dataUrl);
+    return await res.blob();
   };
 
   const handleExportBatch = async () => {
@@ -139,9 +179,9 @@ function App() {
       // Render to offscreen canvas
       renderPhotoBorder(canvas, image, img, state.config, logoImg);
 
-      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 1.0));
+      const blob = await exportImageWithExif(canvas, image.rawExifStr);
       if (blob) {
-        zip.file(`Bordered-${image.file.name}`, blob);
+        zip.file(`Bordered-${image.file.name.replace(/\.[^/.]+$/, "")}.jpg`, blob);
       }
     }
 
@@ -176,11 +216,11 @@ function App() {
 
     renderPhotoBorder(canvas, targetImage, img, state.config, logoImg);
 
-    const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 1.0));
+    const blob = await exportImageWithExif(canvas, targetImage.rawExifStr);
     if (blob) {
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `Bordered-${targetImage.file.name}`;
+      link.download = `Bordered-${targetImage.file.name.replace(/\.[^/.]+$/, "")}.jpg`;
       link.click();
     }
   };

@@ -10,7 +10,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
       manifest: {
-        name: 'Borderify Images',
+        name: 'Borderify',
         short_name: 'Borderify',
         description: 'Add beautiful borders and EXIF metadata to your photos.',
         theme_color: '#0f172a',

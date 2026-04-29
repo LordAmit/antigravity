@@ -491,9 +491,10 @@ const SidebarControls: React.FC = () => {
             <div className="accordion-body">
               <div className="control-group">
                 <label className="label">Signature</label>
-                <input
-                  type="text"
+                <textarea
                   className="input-field"
+                  rows={2}
+                  style={{ resize: 'vertical' }}
                   value={config.labels[0].text}
                   onChange={(e) => updateConfig(c => ({
                     ...c,

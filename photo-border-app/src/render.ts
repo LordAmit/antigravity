@@ -283,21 +283,26 @@ export const renderPhotoBorder = (
     const globalWeight = label.fontWeight || 'normal';
     const globalStyle = label.fontStyle || 'normal';
     
-    // Parse rich text segments
-    const segments = text.split(/(\*\*.*?\*\*|\*.*?\*)/g).filter(Boolean).map(s => {
-      if (s.startsWith('**') && s.endsWith('**')) return { text: s.slice(2, -2), bold: true, italic: false };
-      if (s.startsWith('*') && s.endsWith('*')) return { text: s.slice(1, -1), bold: false, italic: true };
-      return { text: s, bold: false, italic: false };
+    // Parse rich text segments by line
+    const rawLines = text.split('\n');
+    const parsedLines = rawLines.map(line => {
+      const segments = line.split(/(\*\*.*?\*\*|\*.*?\*)/g).filter(Boolean).map(s => {
+        if (s.startsWith('**') && s.endsWith('**')) return { text: s.slice(2, -2), bold: true, italic: false };
+        if (s.startsWith('*') && s.endsWith('*')) return { text: s.slice(1, -1), bold: false, italic: true };
+        return { text: s, bold: false, italic: false };
+      });
+      let lineWidth = 0;
+      segments.forEach(seg => {
+        const weight = seg.bold ? 'bold' : globalWeight;
+        const style = seg.italic ? 'italic' : globalStyle;
+        ctx.font = `${style} ${weight} ${fontSize}px "${label.fontFamily.replace(/"/g, '')}", sans-serif`;
+        lineWidth += ctx.measureText(seg.text).width;
+      });
+      return { segments, lineWidth };
     });
 
     // Measure total width
-    let textWidth = 0;
-    segments.forEach(seg => {
-      const weight = seg.bold ? 'bold' : globalWeight;
-      const style = seg.italic ? 'italic' : globalStyle;
-      ctx.font = `${style} ${weight} ${fontSize}px ${label.fontFamily}, sans-serif`;
-      textWidth += ctx.measureText(seg.text).width;
-    });
+    const textWidth = Math.max(...parsedLines.map(l => l.lineWidth));
 
     let logoW = 0, logoH = 0, logoGap = 0;
     if (config.logo.dataUrl && _logoImgObject) {
@@ -323,36 +328,44 @@ export const renderPhotoBorder = (
     else if (anchor.align === 'center') startX -= (totalW / 2);
 
     let drawY = cardY + anchor.y + offsetY;
-    let currentX = startX;
-
     const logoOffsetX = baseLength * (config.logo.offsetXScale || 0);
     const logoOffsetY = baseLength * (config.logo.offsetYScale || 0);
 
     if (logoW > 0 && config.logo.placement === 'Left of Text' && _logoImgObject) {
-       ctx.drawImage(_logoImgObject, currentX + logoOffsetX, drawY - (logoH / 2) + logoOffsetY, logoW, logoH);
-       currentX += logoW + logoGap;
+       ctx.drawImage(_logoImgObject, startX + logoOffsetX, drawY - (logoH / 2) + logoOffsetY, logoW, logoH);
+       startX += logoW + logoGap;
     }
 
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     
-    segments.forEach(seg => {
-      const weight = seg.bold ? 'bold' : globalWeight;
-      const style = seg.italic ? 'italic' : globalStyle;
-      ctx.font = `${style} ${weight} ${fontSize}px ${label.fontFamily}, sans-serif`;
-      
-      if (label.strokeWidthScale > 0) {
-        ctx.lineWidth = baseLength * label.strokeWidthScale;
-        ctx.strokeStyle = label.strokeColor;
-        ctx.strokeText(seg.text, currentX, drawY);
-      }
-      ctx.fillStyle = label.color;
-      ctx.fillText(seg.text, currentX, drawY);
-      currentX += ctx.measureText(seg.text).width;
+    const lineHeight = fontSize * 1.3;
+    let currentY = drawY - ((parsedLines.length - 1) * lineHeight) / 2;
+
+    parsedLines.forEach(line => {
+      let currentX = startX;
+      if (anchor.align === 'center') currentX += (textWidth - line.lineWidth) / 2;
+      else if (anchor.align === 'right') currentX += (textWidth - line.lineWidth);
+
+      line.segments.forEach(seg => {
+        const weight = seg.bold ? 'bold' : globalWeight;
+        const style = seg.italic ? 'italic' : globalStyle;
+        ctx.font = `${style} ${weight} ${fontSize}px "${label.fontFamily.replace(/"/g, '')}", sans-serif`;
+        
+        if (label.strokeWidthScale > 0) {
+          ctx.lineWidth = baseLength * label.strokeWidthScale;
+          ctx.strokeStyle = label.strokeColor;
+          ctx.strokeText(seg.text, currentX, currentY);
+        }
+        ctx.fillStyle = label.color;
+        ctx.fillText(seg.text, currentX, currentY);
+        currentX += ctx.measureText(seg.text).width;
+      });
+      currentY += lineHeight;
     });
 
     if (logoW > 0 && config.logo.placement === 'Right of Text' && _logoImgObject) {
-       ctx.drawImage(_logoImgObject, currentX + logoGap + logoOffsetX, drawY - (logoH / 2) + logoOffsetY, logoW, logoH);
+       ctx.drawImage(_logoImgObject, startX + textWidth + logoGap + logoOffsetX, drawY - (logoH / 2) + logoOffsetY, logoW, logoH);
     }
   });
 };

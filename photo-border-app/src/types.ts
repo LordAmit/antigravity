@@ -16,6 +16,7 @@ export interface ImageItem {
   width: number;
   height: number;
   exif: ExifData;
+  rawExifStr?: string | null;
 }
 
 export interface LayoutSettings {
