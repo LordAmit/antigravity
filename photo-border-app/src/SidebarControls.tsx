@@ -800,7 +800,7 @@ const SidebarControls: React.FC = () => {
                     </div>
 
                     <SliderRow
-                      label="Pill Text Size"
+                      label="Size"
                       value={config.exifPills.fontSizeScale}
                       min="0.002" max="0.05" step="0.001"
                       onChange={(val: number) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, fontSizeScale: val } }))}
@@ -808,7 +808,7 @@ const SidebarControls: React.FC = () => {
                     />
 
                     <SliderRow
-                      label="Pill Internal Space"
+                      label="Padding"
                       value={config.exifPills.internalPaddingScale}
                       min="0.1" max="2.0" step="0.05"
                       onChange={(val: number) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, internalPaddingScale: val } }))}

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Upload, Layers, Save, FileJson, Archive, Trash2, Download, X } from 'lucide-react';
+import { Upload, Layers, Save, FileJson, Archive, Trash2, Download, X, ImagePlus } from 'lucide-react';
 import { useStore } from './store';
 import { extractExif } from './exif';
 import { renderPhotoBorder } from './render';
@@ -68,10 +68,7 @@ function App() {
     });
   }, [state.config.labels, state.config.exifPills.fontFamily, updateConfig]);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
-
+  const processFiles = async (files: FileList) => {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (!file.type.startsWith('image/')) continue;
@@ -94,9 +91,25 @@ function App() {
         exif,
       });
     }
+  };
 
-    // Reset file input
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+    await processFiles(files);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      await processFiles(files);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
   };
 
   const handleExportBatch = async () => {
@@ -199,7 +212,11 @@ function App() {
   };
 
   return (
-    <div className="app-container">
+    <div 
+      className="app-container"
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+    >
       <div className="workspace">
         <header className="top-bar">
           <div className="brand">
@@ -257,13 +274,14 @@ function App() {
             <div className="empty-state glass-panel" style={{ padding: '40px', borderRadius: '16px' }}>
               <Layers size={48} />
               <h2 style={{ marginBottom: '8px' }}>No Photos Loaded</h2>
-              <p style={{ maxWidth: '300px', fontSize: '14px' }}>Start framing your photos.</p>
+              <p style={{ maxWidth: '300px', fontSize: '14px' }}>Start framing your photos by dropping them here.</p>
               <button
                 className="btn btn-primary"
                 style={{ marginTop: '20px' }}
                 onClick={() => fileInputRef.current?.click()}
               >
-                Choose Photos
+                <ImagePlus size={18} />
+                <span>Choose Photos</span>
               </button>
             </div>
           ) : (
