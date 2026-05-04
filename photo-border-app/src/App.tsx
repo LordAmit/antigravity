@@ -73,10 +73,10 @@ function App() {
   const processFiles = async (files: FileList) => {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (!file.type.startsWith('image/')) continue;
+      if (!file.type.startsWith('image/') && !file.name.match(/\.(jpe?g|png|webp|heic|heif|gif)$/i)) continue;
 
       let rawExifStr: string | null = null;
-      if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+      if (file.type === 'image/jpeg' || file.type === 'image/jpg' || file.name.match(/\.jpe?g$/i)) {
         const reader = new FileReader();
         rawExifStr = await new Promise((resolve) => {
           reader.onload = (e) => {
@@ -101,10 +101,13 @@ function App() {
       const tempImg = new Image();
       const objectUrl = URL.createObjectURL(file);
 
-      await new Promise((resolve) => {
-        tempImg.onload = resolve;
+      const isLoaded = await new Promise((resolve) => {
+        tempImg.onload = () => resolve(true);
+        tempImg.onerror = () => resolve(false);
         tempImg.src = objectUrl;
       });
+      
+      if (!isLoaded) continue;
 
       addImage({
         id: uuidv4(),
@@ -260,7 +263,7 @@ function App() {
       <div className="workspace">
         <header className="top-bar">
           <div className="brand">
-            <Layers className="logo-icon" size={24} />
+            <img src="./favicon.svg" alt="Borderify Logo" className="logo-icon" style={{ width: 28, height: 28 }} />
             <h1 className="brand-name">Borderify</h1>
           </div>
           <div className="actions">
