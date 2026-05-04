@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Upload, Layers, Save, FileJson, Archive, Trash2, Download, X, ImagePlus } from 'lucide-react';
+import { Upload, Save, FileJson, Archive, Trash2, Download, X, ImagePlus } from 'lucide-react';
 import { useStore } from './store';
 import { extractExif } from './exif';
 import { renderPhotoBorder } from './render';
@@ -85,9 +85,9 @@ function App() {
               const exifObj = piexif.load(dataUrl);
               const exifStr = piexif.dump(exifObj);
               if (exifStr && exifStr !== "Exif\x00\x00MM\x00*\x00\x00\x00\x08\x00\x00\x00\x00\x00\x00") {
-                  resolve(exifStr);
+                resolve(exifStr);
               } else {
-                  resolve(null);
+                resolve(null);
               }
             } catch (err) {
               resolve(null);
@@ -106,7 +106,7 @@ function App() {
         tempImg.onerror = () => resolve(false);
         tempImg.src = objectUrl;
       });
-      
+
       if (!isLoaded) continue;
 
       addImage({
@@ -255,7 +255,7 @@ function App() {
   };
 
   return (
-    <div 
+    <div
       className="app-container"
       onDrop={handleDrop}
       onDragOver={handleDragOver}
@@ -293,9 +293,9 @@ function App() {
                 <Trash2 size={18} />
               </button>
             </div>
-            
+
             <div className="divider"></div>
-            
+
             <div className="action-group primary">
               <button className="btn btn-outline" onClick={() => fileInputRef.current?.click()}>
                 <Upload size={16} /> Browse
@@ -315,7 +315,7 @@ function App() {
         <div className="canvas-container">
           {state.images.length === 0 ? (
             <div className="empty-state glass-panel" style={{ padding: '40px', borderRadius: '16px' }}>
-              <Layers size={48} />
+              <img src="./favicon.svg" alt="Borderify Empty State" style={{ width: 100, height: 100 }} />
               <h2 style={{ marginBottom: '8px' }}>No Photos Loaded</h2>
               <p style={{ maxWidth: '300px', fontSize: '14px' }}>Start framing your photos by dropping them here.</p>
               <button
