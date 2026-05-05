@@ -140,6 +140,18 @@ function App() {
     e.preventDefault();
   };
 
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      const files = e.clipboardData?.files;
+      if (files && files.length > 0) {
+        await processFiles(files);
+      }
+    };
+    
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, []);
+
   const exportImageWithExif = async (canvas: HTMLCanvasElement, rawExifStr?: string | null): Promise<Blob | null> => {
     const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
     if (rawExifStr) {
