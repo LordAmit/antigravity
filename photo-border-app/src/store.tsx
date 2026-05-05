@@ -71,6 +71,7 @@ export const defaultConfig: AppConfig = {
     paddingXScale: 0.1,
     borderWidthScale: 0.001,
     internalPaddingScale: 0.8,
+    pillTextSpacingScale: 0.35,
   }
 };
 

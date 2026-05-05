@@ -89,6 +89,7 @@ export interface ExifPillSettings {
   paddingXScale: number;
   borderWidthScale: number;
   internalPaddingScale: number;
+  pillTextSpacingScale: number;
   customCameraText?: string;
   customLensText?: string;
 }

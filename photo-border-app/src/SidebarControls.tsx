@@ -813,7 +813,15 @@ const SidebarControls: React.FC = () => {
                       value={config.exifPills.internalPaddingScale}
                       min="0.1" max="2.0" step="0.05"
                       onChange={(val: number) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, internalPaddingScale: val } }))}
-                      onReset={() => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, internalPaddingScale: 0.5 } }))}
+                      onReset={() => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, internalPaddingScale: 0.8 } }))}
+                    />
+
+                    <SliderRow
+                      label="Line Spacing"
+                      value={config.exifPills.pillTextSpacingScale}
+                      min="0.2" max="0.8" step="0.01"
+                      onChange={(val: number) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, pillTextSpacingScale: val } }))}
+                      onReset={() => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, pillTextSpacingScale: 0.35 } }))}
                     />
                   <div className="control-group">
                     <label className="label">Displayed Data</label>

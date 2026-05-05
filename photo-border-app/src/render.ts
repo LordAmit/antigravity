@@ -195,8 +195,13 @@ export const renderPhotoBorder = (
     if (exifPills.showAperture && image.exif.fNumber) dataPairs.push({ top: image.exif.fNumber.toString(), bottom: 'F' });
     if (exifPills.showIso && image.exif.iso) dataPairs.push({ top: image.exif.iso.toString(), bottom: 'ISO' });
     if (exifPills.showShutter && image.exif.exposureTime) dataPairs.push({ top: image.exif.exposureTime.toString(), bottom: 'S' });
-    if (exifPills.showLens && image.exif.lensModel) dataPairs.push({ top: resolveTemplate(exifPills.customLensText || '{lens}'), bottom: 'LENS' });
-    if (exifPills.showCamera && (image.exif.make || image.exif.model)) dataPairs.push({ top: resolveTemplate(exifPills.customCameraText || '{make} {model}'), bottom: 'CAMERA' });
+    
+    const lensText = resolveTemplate(exifPills.customLensText || '{lens}');
+    if (exifPills.showLens && lensText) dataPairs.push({ top: lensText, bottom: 'LENS' });
+    
+    const cameraText = resolveTemplate(exifPills.customCameraText || '{make} {model}');
+    if (exifPills.showCamera && cameraText) dataPairs.push({ top: cameraText, bottom: 'CAMERA' });
+    
     if (exifPills.showDate && image.exif.date) dataPairs.push({ top: image.exif.date.toString(), bottom: 'DATE' });
 
     if (dataPairs.length > 0) {
@@ -250,25 +255,28 @@ export const renderPhotoBorder = (
         ctx.fill();
         if (ctx.lineWidth > 0) ctx.stroke();
 
+        const topY = startY + boxHeight * (0.525 - exifPills.pillTextSpacingScale / 2);
+        const bottomY = startY + boxHeight * (0.525 + exifPills.pillTextSpacingScale / 2);
+
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.font = `600 ${fontSize}px "${exifPills.fontFamily.replace(/"/g, '')}", sans-serif`;
         if (exifPills.textStrokeWidthScale > 0) {
           ctx.lineWidth = baseLength * exifPills.textStrokeWidthScale;
           ctx.strokeStyle = exifPills.textStrokeColor;
-          ctx.strokeText(pair.top, currentX + pair.width / 2, startY + boxHeight * 0.35);
+          ctx.strokeText(pair.top, currentX + pair.width / 2, topY);
         }
         ctx.fillStyle = exifPills.textColor;
-        ctx.fillText(pair.top, currentX + pair.width / 2, startY + boxHeight * 0.35);
+        ctx.fillText(pair.top, currentX + pair.width / 2, topY);
 
         ctx.font = `400 ${fontSize * 0.6}px "${exifPills.fontFamily.replace(/"/g, '')}", sans-serif`;
         if (exifPills.textStrokeWidthScale > 0) {
           ctx.lineWidth = baseLength * (exifPills.textStrokeWidthScale * 0.6);
           ctx.strokeStyle = exifPills.textStrokeColor;
-          ctx.strokeText(pair.bottom, currentX + pair.width / 2, startY + boxHeight * 0.7);
+          ctx.strokeText(pair.bottom, currentX + pair.width / 2, bottomY);
         }
         ctx.fillStyle = exifPills.textColor + 'aa';
-        ctx.fillText(pair.bottom, currentX + pair.width / 2, startY + boxHeight * 0.7);
+        ctx.fillText(pair.bottom, currentX + pair.width / 2, bottomY);
 
         currentX += pair.width + gap;
       });
