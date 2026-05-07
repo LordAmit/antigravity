@@ -2,6 +2,11 @@
 
 This document outlines the core technical decisions, trade-offs, and design philosophies applied during the development of this application. It aims to mitigate comprehension debt for future maintainers.
 
+## AI ASSISTANT RULES
+**CRITICAL RULE:** AI ASSISTANTS MUST NEVER TRIGGER DEPLOYMENTS. 
+Do not run `npm run deploy`, `rsync`, or any command that pushes code to a staging or production environment. The deployment script has been moved to a separate `deploy.sh` file, which is strictly reserved for manual execution by the human user.
+
+
 ## 1. Canvas-First Rendering Pipeline (`render.ts`)
 
 **Decision:** The application relies entirely on HTML5 `<canvas>` rendering (`CanvasRenderingContext2D`) instead of DOM-based overlay styling (like CSS absolute positioning) to generate the final borders and EXIF data.

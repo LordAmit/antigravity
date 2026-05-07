@@ -816,13 +816,7 @@ const SidebarControls: React.FC = () => {
                       onReset={() => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, internalPaddingScale: 0.8 } }))}
                     />
 
-                    <SliderRow
-                      label="Line Spacing"
-                      value={config.exifPills.pillTextSpacingScale}
-                      min="0.2" max="0.8" step="0.01"
-                      onChange={(val: number) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, pillTextSpacingScale: val } }))}
-                      onReset={() => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, pillTextSpacingScale: 0.35 } }))}
-                    />
+
                   <div className="control-group">
                     <label className="label">Displayed Data</label>
                     <div className="chip-group" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
@@ -972,6 +966,14 @@ const SidebarControls: React.FC = () => {
                         min="0" max="0.02" step="0.001"
                         onChange={(val: number) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, borderWidthScale: val } }))}
                         onReset={() => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, borderWidthScale: defaultConfig.exifPills.borderWidthScale } }))}
+                      />
+
+                      <SliderRow
+                        label="Line Spacing"
+                        value={config.exifPills.pillTextSpacingScale}
+                        min="0.2" max="0.8" step="0.01"
+                        onChange={(val: number) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, pillTextSpacingScale: val } }))}
+                        onReset={() => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, pillTextSpacingScale: 0.35 } }))}
                       />
                     </div>
                   )}
