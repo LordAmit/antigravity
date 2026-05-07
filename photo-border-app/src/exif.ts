@@ -1,7 +1,6 @@
 import exifr from 'exifr';
 import * as piexif from 'piexifjs';
-import type { ExifData, ImageItem, AppConfig } from './types';
-import { resolveTemplate } from './utils';
+import type { ExifData, ImageItem } from './types';
 
 export const extractExif = async (file: File): Promise<ExifData> => {
   try {
@@ -10,6 +9,9 @@ export const extractExif = async (file: File): Promise<ExifData> => {
     ]);
 
     if (!data) return {};
+
+    // Clean strings (remove null bytes and trim)
+    const cleanStr = (val: any) => typeof val === 'string' ? val.replace(/\0/g, '').trim() : val;
 
     // Format exposure time
     let exposureTimeValue: string | number | undefined = data.ExposureTime;
@@ -28,13 +30,13 @@ export const extractExif = async (file: File): Promise<ExifData> => {
     }
 
     return {
-      make: data.Make,
-      model: data.Model,
+      make: cleanStr(data.Make),
+      model: cleanStr(data.Model),
       focalLength: data.FocalLength ? Math.round(data.FocalLength) : undefined,
       fNumber: data.FNumber ? Number(data.FNumber.toFixed(1)) : undefined,
       iso: data.ISO ? Math.round(data.ISO) : undefined,
       exposureTime: exposureTimeValue,
-      lensModel: data.LensModel,
+      lensModel: cleanStr(data.LensModel),
       date: dateValue as any,
     };
   } catch (error) {
@@ -43,7 +45,7 @@ export const extractExif = async (file: File): Promise<ExifData> => {
   }
 };
 
-export const exportImageWithExif = async (canvas: HTMLCanvasElement, image: ImageItem, config: AppConfig): Promise<Blob | null> => {
+export const exportImageWithExif = async (canvas: HTMLCanvasElement, image: ImageItem): Promise<Blob | null> => {
   const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
 
   if (image.rawExifStr) {

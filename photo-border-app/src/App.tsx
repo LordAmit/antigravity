@@ -181,7 +181,7 @@ function App() {
       // Render to offscreen canvas
       renderPhotoBorder(canvas, image, img, state.config, logoImg);
 
-      const blob = await exportImageWithExif(canvas, image, state.config);
+      const blob = await exportImageWithExif(canvas, image);
       if (blob) {
         zip.file(`Bordered-${image.file.name.replace(/\.[^/.]+$/, "")}.jpg`, blob);
       }
@@ -218,7 +218,7 @@ function App() {
 
     renderPhotoBorder(canvas, targetImage, img, state.config, logoImg);
 
-    const blob = await exportImageWithExif(canvas, targetImage, state.config);
+    const blob = await exportImageWithExif(canvas, targetImage);
     if (blob) {
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);

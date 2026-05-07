@@ -275,7 +275,7 @@ export const renderPhotoBorder = (
   // Labels
   config.labels.forEach((label) => {
     if (!label.show || !label.text) return;
-    const text = resolveTemplate(label.text);
+    const text = resolveTemplate(label.text, image.exif);
     const fontSize = baseLength * label.fontSizeScale;
     const globalWeight = label.fontWeight || 'normal';
     const globalStyle = label.fontStyle || 'normal';

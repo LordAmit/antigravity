@@ -45,13 +45,6 @@ describe('exportImageWithExif', () => {
     toDataURL: vi.fn().mockReturnValue('data:image/jpeg;base64,mockdata'),
   } as unknown as HTMLCanvasElement;
 
-  const baseConfig = {
-    exifPills: {
-      customCameraText: '',
-      customLensText: '',
-    }
-  } as any;
-
   beforeEach(() => {
     vi.clearAllMocks();
     global.fetch = vi.fn().mockResolvedValue({ blob: () => Promise.resolve(new Blob()) });
@@ -61,7 +54,7 @@ describe('exportImageWithExif', () => {
     const mockRawExifStr = 'mockRawExifStr';
     (piexif.insert as any).mockReturnValue('newImageWithExif');
 
-    await exportImageWithExif(mockCanvas, { rawExifStr: mockRawExifStr, exif: {} } as any, baseConfig);
+    await exportImageWithExif(mockCanvas, { rawExifStr: mockRawExifStr, exif: {} } as any);
 
     // It should NEVER load or dump, it should strictly use the raw string
     expect(piexif.load).not.toHaveBeenCalled();
@@ -70,7 +63,7 @@ describe('exportImageWithExif', () => {
   });
 
   it('exports cleanly if there is no original EXIF data', async () => {
-    await exportImageWithExif(mockCanvas, { rawExifStr: null, exif: {} } as any, baseConfig);
+    await exportImageWithExif(mockCanvas, { rawExifStr: null, exif: {} } as any);
 
     expect(piexif.insert).not.toHaveBeenCalled();
   });
