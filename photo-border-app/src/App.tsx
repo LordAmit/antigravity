@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { Upload, Save, FileJson, Archive, Trash2, Download, X, ImagePlus } from 'lucide-react';
 import { useStore } from './store';
-import { extractExif } from './exif';
+import { extractExif, exportImageWithExif } from './exif';
 import { renderPhotoBorder } from './render';
 import JSZip from 'jszip';
 import { v4 as uuidv4 } from 'uuid';
@@ -152,20 +152,7 @@ function App() {
     return () => window.removeEventListener('paste', handlePaste);
   }, []);
 
-  const exportImageWithExif = async (canvas: HTMLCanvasElement, rawExifStr?: string | null): Promise<Blob | null> => {
-    const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
-    if (rawExifStr) {
-      try {
-        const newImageWithExif = piexif.insert(rawExifStr, dataUrl);
-        const res = await fetch(newImageWithExif);
-        return await res.blob();
-      } catch (e) {
-        console.error("Failed to insert EXIF", e);
-      }
-    }
-    const res = await fetch(dataUrl);
-    return await res.blob();
-  };
+
 
   const handleExportBatch = async () => {
     if (state.images.length === 0) return;
@@ -194,7 +181,7 @@ function App() {
       // Render to offscreen canvas
       renderPhotoBorder(canvas, image, img, state.config, logoImg);
 
-      const blob = await exportImageWithExif(canvas, image.rawExifStr);
+      const blob = await exportImageWithExif(canvas, image, state.config);
       if (blob) {
         zip.file(`Bordered-${image.file.name.replace(/\.[^/.]+$/, "")}.jpg`, blob);
       }
@@ -231,7 +218,7 @@ function App() {
 
     renderPhotoBorder(canvas, targetImage, img, state.config, logoImg);
 
-    const blob = await exportImageWithExif(canvas, targetImage.rawExifStr);
+    const blob = await exportImageWithExif(canvas, targetImage, state.config);
     if (blob) {
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);

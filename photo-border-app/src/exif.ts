@@ -1,5 +1,7 @@
 import exifr from 'exifr';
-import type { ExifData } from './types';
+import * as piexif from 'piexifjs';
+import type { ExifData, ImageItem, AppConfig } from './types';
+import { resolveTemplate } from './utils';
 
 export const extractExif = async (file: File): Promise<ExifData> => {
   try {
@@ -39,4 +41,21 @@ export const extractExif = async (file: File): Promise<ExifData> => {
     console.warn("Failed to extract EXIF data", error);
     return {};
   }
+};
+
+export const exportImageWithExif = async (canvas: HTMLCanvasElement, image: ImageItem, config: AppConfig): Promise<Blob | null> => {
+  const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
+
+  if (image.rawExifStr) {
+    try {
+      const newImageWithExif = piexif.insert(image.rawExifStr, dataUrl);
+      const res = await fetch(newImageWithExif);
+      return await res.blob();
+    } catch (e) {
+      console.error("Failed to insert EXIF", e);
+    }
+  }
+  
+  const res = await fetch(dataUrl);
+  return await res.blob();
 };

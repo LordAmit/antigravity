@@ -1,4 +1,5 @@
 import type { AppConfig, ImageItem } from './types';
+import { resolveTemplate } from './utils';
 
 // Helper to calculate X/Y based on a 9-point grid relative to a container
 type Alignment = 'left' | 'center' | 'right';
@@ -173,19 +174,7 @@ export const renderPhotoBorder = (
   ctx.drawImage(imgObject, photoX, photoY, drawImgW, drawImgH);
   ctx.restore();
 
-  // Resolve Templates
-  const resolveTemplate = (raw: string) => {
-    return raw
-      .replace(/{make}/gi, String(image.exif.make || ''))
-      .replace(/{model}/gi, String(image.exif.model || ''))
-      .replace(/{lens}/gi, String(image.exif.lensModel || ''))
-      .replace(/{iso}/gi, String(image.exif.iso || ''))
-      .replace(/{focal}/gi, String(image.exif.focalLength || ''))
-      .replace(/{f}/gi, String(image.exif.fNumber || ''))
-      .replace(/{shutter}/gi, String(image.exif.exposureTime || ''))
-      .replace(/{date}/gi, String(image.exif.date || ''))
-      .trim();
-  };
+
 
   // EXIF Pills
   if (config.exifPills.show && image.exif) {
@@ -196,10 +185,10 @@ export const renderPhotoBorder = (
     if (exifPills.showIso && image.exif.iso) dataPairs.push({ top: image.exif.iso.toString(), bottom: 'ISO' });
     if (exifPills.showShutter && image.exif.exposureTime) dataPairs.push({ top: image.exif.exposureTime.toString(), bottom: 'S' });
     
-    const lensText = resolveTemplate(exifPills.customLensText || '{lens}');
+    const lensText = resolveTemplate(exifPills.customLensText || '{lens}', image.exif);
     if (exifPills.showLens && lensText) dataPairs.push({ top: lensText, bottom: 'LENS' });
     
-    const cameraText = resolveTemplate(exifPills.customCameraText || '{make} {model}');
+    const cameraText = resolveTemplate(exifPills.customCameraText || '{make} {model}', image.exif);
     if (exifPills.showCamera && cameraText) dataPairs.push({ top: cameraText, bottom: 'CAMERA' });
     
     if (exifPills.showDate && image.exif.date) dataPairs.push({ top: image.exif.date.toString(), bottom: 'DATE' });
