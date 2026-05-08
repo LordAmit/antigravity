@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore, defaultConfig } from './store';
-import { Type, Square, Database, RotateCcw, Frame, Maximize, Image, Bold, Italic, Download } from 'lucide-react';
+import { Type, Square, Database, RotateCcw, Frame, Maximize, Image, Bold, Italic, Download, FileJson, Save, Archive } from 'lucide-react';
 
 const SliderRow = ({ label, value, min, max, step, onChange, onReset }: any) => {
   return (
@@ -179,9 +179,24 @@ const TagBar = ({ value, onChange, tags }: { value: string, onChange: (val: stri
 interface SidebarControlsProps {
   onPreviewExport?: () => void;
   isPreviewLoading?: boolean;
+  onSavePreset?: () => void;
+  onLoadPreset?: () => void;
+  onExportSingle?: () => void;
+  onExportBatch?: () => void;
+  hasImages?: boolean;
+  hasMultipleImages?: boolean;
 }
 
-const SidebarControls: React.FC<SidebarControlsProps> = ({ onPreviewExport, isPreviewLoading }) => {
+const SidebarControls: React.FC<SidebarControlsProps> = ({ 
+  onPreviewExport, 
+  isPreviewLoading, 
+  onSavePreset, 
+  onLoadPreset,
+  onExportSingle,
+  onExportBatch,
+  hasImages,
+  hasMultipleImages
+}) => {
   const { state, updateConfig, updateImageCaption } = useStore();
   const config = state.config;
   const activeImageObj = state.images.find(img => img.id === state.activeImageId);
@@ -963,6 +978,40 @@ const SidebarControls: React.FC<SidebarControlsProps> = ({ onPreviewExport, isPr
           )}
         </div>
 
+        {/* Manage Presets */}
+        <div className="accordion-item">
+          <button className="accordion-header" onClick={() => toggleSection('presets')}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Save size={16} /> Presets
+            </div>
+            <span>{openSection === 'presets' ? '▲' : '▼'}</span>
+          </button>
+
+          {openSection === 'presets' && (
+            <div className="accordion-body">
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px', lineHeight: '1.4' }}>
+                Save your layout, branding, and EXIF settings to a file, or load an existing template file.
+              </p>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  className="btn btn-outline" 
+                  style={{ flex: 1, padding: '8px 12px', fontSize: '13px', justifyContent: 'center' }}
+                  onClick={onLoadPreset}
+                >
+                  <FileJson size={14} /> Import JSON
+                </button>
+                <button 
+                  className="btn btn-primary" 
+                  style={{ flex: 1, padding: '8px 12px', fontSize: '13px', justifyContent: 'center' }}
+                  onClick={onSavePreset}
+                >
+                  <Save size={14} /> Save JSON
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Export Settings */}
         <div className="accordion-item">
           <button className="accordion-header" onClick={() => toggleSection('export')}>
@@ -1013,6 +1062,27 @@ const SidebarControls: React.FC<SidebarControlsProps> = ({ onPreviewExport, isPr
                   <Image size={16} /> 
                   {isPreviewLoading ? 'Generating...' : 'Preview Export Quality'}
                 </button>
+              )}
+
+              {hasImages && (
+                <div style={{ marginTop: '16px', borderTop: '1px solid var(--surface-border)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <button 
+                    className="btn btn-primary" 
+                    style={{ width: '100%', justifyContent: 'center' }}
+                    onClick={onExportSingle}
+                  >
+                    <Download size={16} /> Save Current Image
+                  </button>
+                  {hasMultipleImages && (
+                    <button 
+                      className="btn btn-outline" 
+                      style={{ width: '100%', justifyContent: 'center' }}
+                      onClick={onExportBatch}
+                    >
+                      <Archive size={16} /> Save All (ZIP)
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           )}

@@ -67,4 +67,11 @@ describe('exportImageWithExif', () => {
 
     expect(piexif.insert).not.toHaveBeenCalled();
   });
+
+  it('properly passes custom quality settings down to the canvas toDataURL method', async () => {
+    const quality = 0.85;
+    await exportImageWithExif(mockCanvas, { rawExifStr: null, exif: {} } as any, quality);
+
+    expect(mockCanvas.toDataURL).toHaveBeenCalledWith('image/jpeg', 0.85);
+  });
 });

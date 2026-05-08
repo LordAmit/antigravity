@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Upload, Save, FileJson, Archive, Trash2, Download, X, ImagePlus } from 'lucide-react';
+import { Upload, Trash2, Download, X, ImagePlus } from 'lucide-react';
 import { useStore } from './store';
 import { extractExif, exportImageWithExif } from './exif';
 import { renderPhotoBorder } from './render';
@@ -334,32 +334,13 @@ function App() {
               style={{ display: 'none' }}
               onChange={loadPresetJSON}
             />
-            <div className="action-group secondary">
-              <button className="icon-btn" onClick={() => importPresetRef.current?.click()} title="Load Preset">
-                <FileJson size={18} />
-              </button>
-              <button className="icon-btn" onClick={savePresetJSON} title="Save Preset">
-                <Save size={18} />
-              </button>
-              <button className="icon-btn destructive" onClick={() => clearAllImages()} disabled={state.images.length === 0} title="Clear All Photos">
-                <Trash2 size={18} />
-              </button>
-            </div>
-
-            <div className="divider"></div>
-
-            <div className="action-group primary">
+            <div className="action-group">
               <button className="btn btn-outline" onClick={() => fileInputRef.current?.click()}>
                 <Upload size={16} /> Browse
               </button>
-              <button className="btn btn-outline" onClick={handleExportSingle} disabled={state.images.length === 0}>
-                <Download size={16} /> Save
+              <button className="btn btn-danger" onClick={() => clearAllImages()} disabled={state.images.length === 0} title="Clear All Photos">
+                <Trash2 size={16} /> Reset
               </button>
-              {state.images.length > 1 && (
-                <button className="btn btn-primary" onClick={handleExportBatch}>
-                  <Archive size={16} /> Save All
-                </button>
-              )}
             </div>
           </div>
         </header>
@@ -435,7 +416,16 @@ function App() {
         </div>
       </div>
 
-      <SidebarControls onPreviewExport={handlePreviewExport} isPreviewLoading={isPreviewLoading} />
+      <SidebarControls 
+        onPreviewExport={handlePreviewExport} 
+        isPreviewLoading={isPreviewLoading}
+        onSavePreset={savePresetJSON}
+        onLoadPreset={() => importPresetRef.current?.click()}
+        onExportSingle={handleExportSingle}
+        onExportBatch={handleExportBatch}
+        hasImages={state.images.length > 0}
+        hasMultipleImages={state.images.length > 1}
+      />
 
       {previewUrl && (
         <div style={{
