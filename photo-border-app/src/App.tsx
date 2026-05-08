@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Upload, Save, FileJson, Archive, Trash2, Download, X, ImagePlus } from 'lucide-react';
 import { useStore } from './store';
 import { extractExif, exportImageWithExif } from './exif';
@@ -13,6 +13,8 @@ import piexif from 'piexifjs';
 function App() {
   const { state, addImage, updateConfig, clearAllImages, setActiveImage, removeImage } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
   // Dynamically load fonts from Google Fonts for seamless usage
   useEffect(() => {
@@ -117,6 +119,7 @@ function App() {
         height: tempImg.height,
         exif,
         rawExifStr,
+        captionText: state.config.labels[0].text,
       });
     }
   };
@@ -178,10 +181,15 @@ function App() {
         img.src = image.objectUrl;
       });
 
-      // Render to offscreen canvas
-      renderPhotoBorder(canvas, image, img, state.config, logoImg);
+      let overrideMaxRes = 8000;
+      if (state.config.export?.maxResolution === "4K") overrideMaxRes = 3840;
+      if (state.config.export?.maxResolution === "Instagram") overrideMaxRes = 1350;
 
-      const blob = await exportImageWithExif(canvas, image);
+      // Render to offscreen canvas
+      renderPhotoBorder(canvas, image, img, state.config, logoImg, overrideMaxRes);
+
+      const quality = (state.config.export?.quality ?? 100) / 100;
+      const blob = await exportImageWithExif(canvas, image, quality);
       if (blob) {
         zip.file(`Bordered-${image.file.name.replace(/\.[^/.]+$/, "")}.jpg`, blob);
       }
@@ -216,15 +224,57 @@ function App() {
       img.src = targetImage.objectUrl;
     });
 
-    renderPhotoBorder(canvas, targetImage, img, state.config, logoImg);
+    let overrideMaxRes = 8000;
+    if (state.config.export?.maxResolution === "4K") overrideMaxRes = 3840;
+    if (state.config.export?.maxResolution === "Instagram") overrideMaxRes = 1350;
 
-    const blob = await exportImageWithExif(canvas, targetImage);
+    renderPhotoBorder(canvas, targetImage, img, state.config, logoImg, overrideMaxRes);
+
+    const quality = (state.config.export?.quality ?? 100) / 100;
+    const blob = await exportImageWithExif(canvas, targetImage, quality);
     if (blob) {
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = `Bordered-${targetImage.file.name.replace(/\.[^/.]+$/, "")}.jpg`;
       link.click();
     }
+  };
+
+  const handlePreviewExport = async () => {
+    if (state.images.length === 0) return;
+    setIsPreviewLoading(true);
+
+    let targetImage = state.images.find(img => img.id === state.activeImageId);
+    if (!targetImage) targetImage = state.images[0];
+
+    const canvas = document.createElement('canvas');
+    let logoImg: HTMLImageElement | null = null;
+    if (state.config.logo.dataUrl) {
+      logoImg = new Image();
+      await new Promise((resolve) => {
+        logoImg!.onload = resolve;
+        logoImg!.src = state.config.logo.dataUrl!;
+      });
+    }
+
+    const img = new Image();
+    await new Promise((resolve) => {
+      img.onload = resolve;
+      img.src = targetImage.objectUrl;
+    });
+
+    let overrideMaxRes = 8000;
+    if (state.config.export?.maxResolution === "4K") overrideMaxRes = 3840;
+    if (state.config.export?.maxResolution === "Instagram") overrideMaxRes = 1350;
+
+    renderPhotoBorder(canvas, targetImage, img, state.config, logoImg, overrideMaxRes);
+
+    const quality = (state.config.export?.quality ?? 100) / 100;
+    const blob = await exportImageWithExif(canvas, targetImage, quality);
+    if (blob) {
+      setPreviewUrl(URL.createObjectURL(blob));
+    }
+    setIsPreviewLoading(false);
   };
 
   const savePresetJSON = () => {
@@ -382,7 +432,37 @@ function App() {
         </div>
       </div>
 
-      <SidebarControls />
+      <SidebarControls onPreviewExport={handlePreviewExport} isPreviewLoading={isPreviewLoading} />
+
+      {previewUrl && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.85)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '20px'
+        }}>
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            display: 'flex',
+            gap: '12px'
+          }}>
+            <button className="btn btn-primary" onClick={handleExportSingle}>
+              <Download size={16} /> Save Image
+            </button>
+            <button className="btn btn-outline" onClick={() => setPreviewUrl(null)} style={{ background: 'var(--surface-color)' }}>
+              <X size={16} /> Close Preview
+            </button>
+          </div>
+          <img src={previewUrl} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }} />
+        </div>
+      )}
     </div>
   );
 }

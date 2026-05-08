@@ -13,7 +13,9 @@ export const resolveTemplate = (raw: string, exif: ExifData | undefined): string
     .replace(/{f}/gi, String(safeExif.fNumber || ''))
     .replace(/{shutter}/gi, String(safeExif.exposureTime || ''))
     .replace(/{date}/gi, String(safeExif.date || ''))
-    // Replace multiple spaces that might result from empty replacements with a single space
-    .replace(/\s+/g, ' ')
+    // Replace multiple horizontal spaces with a single space
+    .replace(/[^\S\n]+/g, ' ')
+    // Remove trailing spaces at the end of each line
+    .replace(/[^\S\n]+$/gm, '')
     .trim();
 };

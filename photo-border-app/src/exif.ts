@@ -45,8 +45,8 @@ export const extractExif = async (file: File): Promise<ExifData> => {
   }
 };
 
-export const exportImageWithExif = async (canvas: HTMLCanvasElement, image: ImageItem): Promise<Blob | null> => {
-  const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
+export const exportImageWithExif = async (canvas: HTMLCanvasElement, image: ImageItem, quality: number = 0.92): Promise<Blob | null> => {
+  const dataUrl = canvas.toDataURL('image/jpeg', quality);
 
   if (image.rawExifStr) {
     try {

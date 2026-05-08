@@ -22,4 +22,11 @@ describe('resolveTemplate', () => {
     expect(resolveTemplate('My Custom Camera', exif)).toBe('My Custom Camera');
     expect(resolveTemplate('My Custom Camera', undefined)).toBe('My Custom Camera');
   });
+
+  it('preserves newlines in the string while collapsing horizontal whitespace', () => {
+    const exif = { make: 'Sony' } as any; // missing model
+    const input = 'Shot on {make} {model}\nNext line here';
+    // {make} -> 'Sony', {model} -> '', resulting string: 'Shot on Sony \nNext line here' -> collapsed to 'Shot on Sony\nNext line here'
+    expect(resolveTemplate(input, exif)).toBe('Shot on Sony\nNext line here');
+  });
 });

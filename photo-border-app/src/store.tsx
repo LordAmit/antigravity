@@ -33,9 +33,8 @@ export const defaultConfig: AppConfig = {
       strokeWidthScale: 0,
       position: "Bottom Center",
       positionXScale: 0,
-      positionYScale: 0,
-      paddingYScale: 0,
-      paddingXScale: 0.1,
+      positionYScale: -0.03,
+
       fontWeight: "normal",
       fontStyle: "normal",
     }
@@ -43,8 +42,8 @@ export const defaultConfig: AppConfig = {
   logo: {
     dataUrl: null,
     sizeScale: 0.08,
-    placement: "Right of Text",
-    gapScale: 0.005,
+    position: "Bottom Right",
+
     offsetXScale: 0,
     offsetYScale: 0,
   },
@@ -59,7 +58,7 @@ export const defaultConfig: AppConfig = {
     showDate: false,
     position: "Bottom Center",
     positionXScale: 0,
-    positionYScale: 0,
+    positionYScale: 0.03,
     boxColor: "#ffffff",
     textColor: "#1e293b",
     textStrokeColor: "#000000",
@@ -67,11 +66,13 @@ export const defaultConfig: AppConfig = {
     borderColor: "#e2e8f0",
     fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
     fontSizeScale: 0.012,
-    paddingYScale: 0.04,
-    paddingXScale: 0.1,
     borderWidthScale: 0.001,
     internalPaddingScale: 0.8,
     pillTextSpacingScale: 0.35,
+  },
+  export: {
+    quality: 100,
+    maxResolution: "Original",
   }
 };
 
@@ -83,6 +84,7 @@ interface StoreContextType {
   removeImage: (id: string) => void;
   setActiveImage: (id: string | null) => void;
   clearAllImages: () => void;
+  updateImageCaption: (id: string, text: string) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -127,9 +129,15 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const clearAllImages = () => {
     setState(prev => ({ ...prev, images: [], activeImageId: null }));
   };
+  const updateImageCaption = (id: string, text: string) => {
+    setState(prev => ({
+      ...prev,
+      images: prev.images.map(img => img.id === id ? { ...img, captionText: text } : img)
+    }));
+  };
 
   return (
-    <StoreContext.Provider value={{ state, setState, updateConfig, addImage, removeImage, setActiveImage, clearAllImages }}>
+    <StoreContext.Provider value={{ state, setState, updateConfig, addImage, removeImage, setActiveImage, clearAllImages, updateImageCaption }}>
       {children}
     </StoreContext.Provider>
   );

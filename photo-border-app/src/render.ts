@@ -12,21 +12,19 @@ function getPreciseAnchor(
   padTop: number,
   padBottom: number,
   padSide: number,
-  position: string,
-  customPadX: number,
-  customPadY: number
+  position: string
 ): { x: number; y: number; align: Alignment; vAlign: VAlignment } {
   // Coordinates are relative to the top-left of the entire card block (container)
   const map: Record<string, { x: number; y: number; align: Alignment; vAlign: VAlignment }> = {
-    'Top Left':      { x: customPadX || (padSide / 2),     y: customPadY || (padTop / 2),      align: 'left',   vAlign: 'middle' },
-    'Top Center':    { x: containerW / 2,                  y: customPadY || (padTop / 2),      align: 'center', vAlign: 'middle' },
-    'Top Right':     { x: containerW - (customPadX || (padSide / 2)), y: customPadY || (padTop / 2), align: 'right',  vAlign: 'middle' },
-    'Middle Left':   { x: customPadX || (padSide / 2),     y: padTop + (imgH / 2),             align: 'left',   vAlign: 'middle' },
-    'Center':        { x: containerW / 2,                  y: padTop + (imgH / 2),             align: 'center', vAlign: 'middle' },
-    'Middle Right':  { x: containerW - (customPadX || (padSide / 2)), y: padTop + (imgH / 2),    align: 'right',  vAlign: 'middle' },
-    'Bottom Left':   { x: customPadX || (padSide / 2),     y: containerH - (customPadY || (padBottom / 2)), align: 'left', vAlign: 'middle' },
-    'Bottom Center': { x: containerW / 2,                  y: containerH - (customPadY || (padBottom / 2)), align: 'center', vAlign: 'middle' },
-    'Bottom Right':  { x: containerW - (customPadX || (padSide / 2)), y: containerH - (customPadY || (padBottom / 2)), align: 'right', vAlign: 'middle' },
+    'Top Left':      { x: padSide / 2,                  y: padTop / 2,                   align: 'left',   vAlign: 'middle' },
+    'Top Center':    { x: containerW / 2,               y: padTop / 2,                   align: 'center', vAlign: 'middle' },
+    'Top Right':     { x: containerW - (padSide / 2),   y: padTop / 2,                   align: 'right',  vAlign: 'middle' },
+    'Middle Left':   { x: padSide / 2,                  y: padTop + (imgH / 2),          align: 'left',   vAlign: 'middle' },
+    'Center':        { x: containerW / 2,               y: padTop + (imgH / 2),          align: 'center', vAlign: 'middle' },
+    'Middle Right':  { x: containerW - (padSide / 2),   y: padTop + (imgH / 2),          align: 'right',  vAlign: 'middle' },
+    'Bottom Left':   { x: padSide / 2,                  y: containerH - (padBottom / 2), align: 'left',   vAlign: 'middle' },
+    'Bottom Center': { x: containerW / 2,               y: containerH - (padBottom / 2), align: 'center', vAlign: 'middle' },
+    'Bottom Right':  { x: containerW - (padSide / 2),   y: containerH - (padBottom / 2), align: 'right',  vAlign: 'middle' },
   };
 
   return map[position] || map['Bottom Center'];
@@ -37,12 +35,13 @@ export const renderPhotoBorder = (
   image: ImageItem,
   imgObject: HTMLImageElement,
   config: AppConfig,
-  _logoImgObject?: HTMLImageElement | null
+  _logoImgObject?: HTMLImageElement | null,
+  overrideMaxRes?: number
 ) => {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  const maxRes = 8000;
+  const maxRes = overrideMaxRes || 8000;
   let scaleLimit = 1;
   const longestEdge = Math.max(imgObject.width, imgObject.height);
   if (longestEdge > maxRes) {
@@ -217,9 +216,7 @@ export const renderPhotoBorder = (
       const anchor = getPreciseAnchor(
         cardW, cardH, drawImgH, 
         innerPadTop, innerPadBottom, innerPadSide, 
-        exifPills.position, 
-        baseLength * exifPills.paddingXScale, 
-        baseLength * exifPills.paddingYScale
+        exifPills.position
       );
       
       const offsetX = exifPills.positionXScale * baseLength;
@@ -272,10 +269,17 @@ export const renderPhotoBorder = (
     }
   }
 
+  let logoW = 0, logoH = 0;
+  if (config.logo.dataUrl && _logoImgObject) {
+     logoH = baseLength * config.logo.sizeScale;
+     logoW = logoH * (_logoImgObject.width / _logoImgObject.height);
+  }
+
   // Labels
-  config.labels.forEach((label) => {
-    if (!label.show || !label.text) return;
-    const text = resolveTemplate(label.text, image.exif);
+  config.labels.forEach((label, index) => {
+    const rawText = (index === 0 && image.captionText !== undefined) ? image.captionText : label.text;
+    if (!label.show || !rawText) return;
+    const text = resolveTemplate(rawText, image.exif);
     const fontSize = baseLength * label.fontSizeScale;
     const globalWeight = label.fontWeight || 'normal';
     const globalStyle = label.fontStyle || 'normal';
@@ -301,20 +305,13 @@ export const renderPhotoBorder = (
     // Measure total width
     const textWidth = Math.max(...parsedLines.map(l => l.lineWidth));
 
-    let logoW = 0, logoH = 0, logoGap = 0;
-    if (config.logo.dataUrl && _logoImgObject) {
-       logoH = baseLength * config.logo.sizeScale;
-       logoW = logoH * (_logoImgObject.width / _logoImgObject.height);
-       logoGap = baseLength * config.logo.gapScale;
-    }
 
-    const totalW = textWidth + (logoW > 0 ? logoW + logoGap : 0);
+
+    const totalW = textWidth;
     const anchor = getPreciseAnchor(
       cardW, cardH, drawImgH, 
       innerPadTop, innerPadBottom, innerPadSide, 
-      label.position, 
-      baseLength * label.paddingXScale, 
-      baseLength * label.paddingYScale
+      label.position
     );
 
     const offsetX = baseLength * (label.positionXScale || 0);
@@ -325,13 +322,6 @@ export const renderPhotoBorder = (
     else if (anchor.align === 'center') startX -= (totalW / 2);
 
     let drawY = cardY + anchor.y + offsetY;
-    const logoOffsetX = baseLength * (config.logo.offsetXScale || 0);
-    const logoOffsetY = baseLength * (config.logo.offsetYScale || 0);
-
-    if (logoW > 0 && config.logo.placement === 'Left of Text' && _logoImgObject) {
-       ctx.drawImage(_logoImgObject, startX + logoOffsetX, drawY - (logoH / 2) + logoOffsetY, logoW, logoH);
-       startX += logoW + logoGap;
-    }
 
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
@@ -360,9 +350,25 @@ export const renderPhotoBorder = (
       });
       currentY += lineHeight;
     });
-
-    if (logoW > 0 && config.logo.placement === 'Right of Text' && _logoImgObject) {
-       ctx.drawImage(_logoImgObject, startX + textWidth + logoGap + logoOffsetX, drawY - (logoH / 2) + logoOffsetY, logoW, logoH);
-    }
   });
+
+  // Render independent Logo
+  if (logoW > 0 && _logoImgObject) {
+    const logoAnchor = getPreciseAnchor(
+      cardW, cardH, drawImgH, 
+      innerPadTop, innerPadBottom, innerPadSide, 
+      config.logo.position
+    );
+
+    const logoOffsetX = baseLength * (config.logo.offsetXScale || 0);
+    const logoOffsetY = baseLength * (config.logo.offsetYScale || 0);
+
+    let startX = cardX + logoAnchor.x + logoOffsetX;
+    if (logoAnchor.align === 'right') startX -= logoW;
+    else if (logoAnchor.align === 'center') startX -= (logoW / 2);
+
+    let drawY = cardY + logoAnchor.y + logoOffsetY;
+
+    ctx.drawImage(_logoImgObject, startX, drawY - (logoH / 2), logoW, logoH);
+  }
 };

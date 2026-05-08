@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore, defaultConfig } from './store';
-import { Type, Square, Database, RotateCcw, Frame, Maximize, Image, Bold, Italic } from 'lucide-react';
+import { Type, Square, Database, RotateCcw, Frame, Maximize, Image, Bold, Italic, Download } from 'lucide-react';
 
 const SliderRow = ({ label, value, min, max, step, onChange, onReset }: any) => {
   return (
@@ -136,53 +136,7 @@ const StyleGallery = ({ config, updateConfig }: any) => {
     </div>
   );
 };
-const LogoPlacementSelector = ({ value, onChange }: { value: string, onChange: (val: any) => void }) => {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '6px' }}>
-      <div 
-        className={`pos-cell ${value === 'Left of Text' ? 'active' : ''}`}
-        style={{ 
-          height: '30px', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          fontSize: '10px', 
-          cursor: 'pointer', 
-          borderRadius: '4px', 
-          background: value === 'Left of Text' ? 'rgba(56, 189, 248, 0.2)' : 'transparent', 
-          color: value === 'Left of Text' ? '#38bdf8' : '#94a3b8', 
-          border: value === 'Left of Text' ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid transparent',
-          transition: 'all 0.2s ease'
-        }}
-        onClick={() => onChange('Left of Text')}
-      >
-        Left
-      </div>
-      <div style={{ height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: '#64748b', fontWeight: 'bold' }}>
-        Text
-      </div>
-      <div 
-        className={`pos-cell ${value === 'Right of Text' ? 'active' : ''}`}
-        style={{ 
-          height: '30px', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          fontSize: '10px', 
-          cursor: 'pointer', 
-          borderRadius: '4px', 
-          background: value === 'Right of Text' ? 'rgba(56, 189, 248, 0.2)' : 'transparent', 
-          color: value === 'Right of Text' ? '#38bdf8' : '#94a3b8', 
-          border: value === 'Right of Text' ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid transparent',
-          transition: 'all 0.2s ease'
-        }}
-        onClick={() => onChange('Right of Text')}
-      >
-        Right
-      </div>
-    </div>
-  );
-};
+
 
 
 const TagBar = ({ value, onChange, tags }: { value: string, onChange: (val: string) => void, tags: string[] }) => {
@@ -222,15 +176,20 @@ const TagBar = ({ value, onChange, tags }: { value: string, onChange: (val: stri
   );
 };
 
-const SidebarControls: React.FC = () => {
-  const { state, updateConfig } = useStore();
+interface SidebarControlsProps {
+  onPreviewExport?: () => void;
+  isPreviewLoading?: boolean;
+}
+
+const SidebarControls: React.FC<SidebarControlsProps> = ({ onPreviewExport, isPreviewLoading }) => {
+  const { state, updateConfig, updateImageCaption } = useStore();
   const config = state.config;
+  const activeImageObj = state.images.find(img => img.id === state.activeImageId);
+  const currentCaption = activeImageObj?.captionText ?? (config.labels[0]?.text || '');
 
   const [openSection, setOpenSection] = useState<string>('layout');
   const [showAdvancedLayout, setShowAdvancedLayout] = useState(false);
-  const [showAdvancedTypography, setShowAdvancedTypography] = useState(false);
   const [showAdvancedExif, setShowAdvancedExif] = useState(false);
-  const [showLogoAdvanced, setShowLogoAdvanced] = useState(false);
 
   const toggleSection = (section: string) => {
     setOpenSection(openSection === section ? '' : section);
@@ -478,11 +437,11 @@ const SidebarControls: React.FC = () => {
           )}
         </div>
 
-        {/* Typography Settings */}
+        {/* Caption Settings */}
         <div className="accordion-item">
           <button className="accordion-header" onClick={() => toggleSection('typography')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Type size={16} /> Typography / Brand
+              <Type size={16} /> Caption
             </div>
             <span>{openSection === 'typography' ? '▲' : '▼'}</span>
           </button>
@@ -490,20 +449,33 @@ const SidebarControls: React.FC = () => {
           {openSection === 'typography' && config.labels.length > 0 && (
             <div className="accordion-body">
               <div className="control-group">
-                <label className="label">Signature</label>
+                <label className="label">Caption Text</label>
                 <textarea
                   className="input-field"
                   rows={2}
                   style={{ resize: 'vertical' }}
-                  value={config.labels[0].text}
-                  onChange={(e) => updateConfig(c => ({
-                    ...c,
-                    labels: [{ ...c.labels[0], text: e.target.value }]
-                  }))}
+                  value={currentCaption}
+                  onChange={(e) => {
+                    if (state.activeImageId) {
+                      updateImageCaption(state.activeImageId, e.target.value);
+                    } else {
+                      updateConfig(c => ({
+                        ...c,
+                        labels: [{ ...c.labels[0], text: e.target.value }]
+                      }));
+                    }
+                  }}
+                  placeholder="Enter caption for this photo..."
                 />
                   <TagBar 
-                    value={config.labels[0].text} 
-                    onChange={(val) => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], text: val }] }))}
+                    value={currentCaption} 
+                    onChange={(val) => {
+                      if (state.activeImageId) {
+                        updateImageCaption(state.activeImageId, val);
+                      } else {
+                        updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], text: val }] }));
+                      }
+                    }}
                     tags={['{make}', '{model}', '{iso}', '{shutter}', '{f}', '{focal}', '{lens}', '{date}']}
                   />
               </div>
@@ -633,39 +605,27 @@ const SidebarControls: React.FC = () => {
                 </div>
               </div>
 
-              <div 
-                className="advanced-toggle" 
-                onClick={() => setShowAdvancedTypography(!showAdvancedTypography)}
-              >
-                <span>Typography Offsets & Stroke</span>
-                <span>{showAdvancedTypography ? '−' : '+'}</span>
-              </div>
-
-              {showAdvancedTypography && (
-                <div className="advanced-section">
-                  <SliderRow
-                    label="Horizontal"
-                    value={config.labels[0].positionXScale}
-                    min="-0.5" max="0.5" step="0.005"
-                    onChange={(val: number) => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], positionXScale: val }] }))}
-                    onReset={() => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], positionXScale: 0 }] }))}
-                  />
-                  <SliderRow
-                    label="Vertical"
-                    value={config.labels[0].positionYScale}
-                    min="-0.5" max="0.5" step="0.005"
-                    onChange={(val: number) => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], positionYScale: val }] }))}
-                    onReset={() => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], positionYScale: 0 }] }))}
-                  />
-                  <SliderRow
-                    label="Outline"
-                    value={config.labels[0].strokeWidthScale}
-                    min="0" max="0.02" step="0.001"
-                    onChange={(val: number) => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], strokeWidthScale: val }] }))}
-                    onReset={() => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], strokeWidthScale: defaultConfig.labels[0].strokeWidthScale }] }))}
-                  />
-                </div>
-              )}
+              <SliderRow
+                label="Offset X"
+                value={config.labels[0].positionXScale}
+                min="-0.5" max="0.5" step="0.005"
+                onChange={(val: number) => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], positionXScale: val }] }))}
+                onReset={() => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], positionXScale: 0 }] }))}
+              />
+              <SliderRow
+                label="Offset Y"
+                value={config.labels[0].positionYScale}
+                min="-0.5" max="0.5" step="0.005"
+                onChange={(val: number) => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], positionYScale: val }] }))}
+                onReset={() => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], positionYScale: 0 }] }))}
+              />
+              <SliderRow
+                label="Outline"
+                value={config.labels[0].strokeWidthScale}
+                min="0" max="0.02" step="0.001"
+                onChange={(val: number) => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], strokeWidthScale: val }] }))}
+                onReset={() => updateConfig(c => ({ ...c, labels: [{ ...c.labels[0], strokeWidthScale: defaultConfig.labels[0].strokeWidthScale }] }))}
+              />
             </div>
           )}
         </div>
@@ -721,44 +681,32 @@ const SidebarControls: React.FC = () => {
                   />
 
                   <div className="control-group">
-                    <label className="label">Placement</label>
-                    <LogoPlacementSelector 
-                      value={config.logo.placement}
-                      onChange={(val) => updateConfig(c => ({ ...c, logo: { ...c.logo, placement: val } }))}
-                    />
+                    <label className="label">Position</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <GridPositionSelector 
+                        value={config.logo.position}
+                        onChange={(pos: any) => updateConfig(c => ({
+                          ...c, logo: { ...c.logo, position: pos }
+                        }))}
+                      />
+                      <div style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{config.logo.position}</div>
+                    </div>
                   </div>
 
                   <SliderRow
-                    label="Gap"
-                    value={config.logo.gapScale}
-                    min="0" max="0.10" step="0.005"
-                    onChange={(val: number) => updateConfig(c => ({ ...c, logo: { ...c.logo, gapScale: val } }))}
-                    onReset={() => updateConfig(c => ({ ...c, logo: { ...c.logo, gapScale: defaultConfig.logo.gapScale } }))}
+                    label="Offset X"
+                    value={config.logo.offsetXScale}
+                    min="-0.5" max="0.5" step="0.005"
+                    onChange={(val: number) => updateConfig(c => ({ ...c, logo: { ...c.logo, offsetXScale: val } }))}
+                    onReset={() => updateConfig(c => ({ ...c, logo: { ...c.logo, offsetXScale: 0 } }))}
                   />
-
-                  <div className="advanced-toggle" onClick={() => setShowLogoAdvanced(!showLogoAdvanced)}>
-                    <span>Logo Adjustment</span>
-                    <span>{showLogoAdvanced ? '−' : '+'}</span>
-                  </div>
-
-                  {showLogoAdvanced && (
-                    <div className="advanced-section">
-                      <SliderRow
-                    label="Horizontal"
-                        value={config.logo.offsetXScale}
-                        min="-0.2" max="0.2" step="0.005"
-                        onChange={(val: number) => updateConfig(c => ({ ...c, logo: { ...c.logo, offsetXScale: val } }))}
-                        onReset={() => updateConfig(c => ({ ...c, logo: { ...c.logo, offsetXScale: 0 } }))}
-                      />
-                      <SliderRow
-                    label="Vertical"
-                        value={config.logo.offsetYScale}
-                        min="-0.2" max="0.2" step="0.005"
-                        onChange={(val: number) => updateConfig(c => ({ ...c, logo: { ...c.logo, offsetYScale: val } }))}
-                        onReset={() => updateConfig(c => ({ ...c, logo: { ...c.logo, offsetYScale: 0 } }))}
-                      />
-                    </div>
-                  )}
+                  <SliderRow
+                    label="Offset Y"
+                    value={config.logo.offsetYScale}
+                    min="-0.5" max="0.5" step="0.005"
+                    onChange={(val: number) => updateConfig(c => ({ ...c, logo: { ...c.logo, offsetYScale: val } }))}
+                    onReset={() => updateConfig(c => ({ ...c, logo: { ...c.logo, offsetYScale: 0 } }))}
+                  />
                 </>
               )}
             </div>
@@ -893,14 +841,14 @@ const SidebarControls: React.FC = () => {
                       </div>
 
                       <SliderRow
-                        label="Horizontal"
+                        label="Offset X"
                         value={config.exifPills.positionXScale}
                         min="-0.5" max="0.5" step="0.01"
                         onChange={(val: number) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, positionXScale: val } }))}
                         onReset={() => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, positionXScale: defaultConfig.exifPills.positionXScale } }))}
                       />
                       <SliderRow
-                        label="Vertical"
+                        label="Offset Y"
                         value={config.exifPills.positionYScale}
                         min="-0.5" max="0.5" step="0.01"
                         onChange={(val: number) => updateConfig(c => ({ ...c, exifPills: { ...c.exifPills, positionYScale: val } }))}
@@ -978,6 +926,55 @@ const SidebarControls: React.FC = () => {
                     </div>
                   )}
                 </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Export Settings */}
+        <div className="accordion-item">
+          <button className="accordion-header" onClick={() => toggleSection('export')}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Download size={16} /> Export
+            </div>
+            <span>{openSection === 'export' ? '▲' : '▼'}</span>
+          </button>
+
+          {openSection === 'export' && (
+            <div className="accordion-body">
+              <div className="control-group">
+                <label className="label">Resolution Limit</label>
+                <select
+                  className="input-field"
+                  value={config.export?.maxResolution || "Original"}
+                  onChange={(e) => updateConfig(c => ({
+                    ...c, export: { ...c.export, maxResolution: e.target.value as any }
+                  }))}
+                >
+                  <option value="Original">Original (No Scaling)</option>
+                  <option value="4K">4K (Max 3840px)</option>
+                  <option value="Instagram">Instagram (Max 1350px)</option>
+                </select>
+              </div>
+
+              <SliderRow
+                label="JPEG Quality"
+                value={config.export?.quality || 100}
+                min="1" max="100" step="1"
+                onChange={(val: number) => updateConfig(c => ({ ...c, export: { ...c.export, quality: val } }))}
+                onReset={() => updateConfig(c => ({ ...c, export: { ...c.export, quality: 100 } }))}
+              />
+
+              {onPreviewExport && (
+                <button 
+                  className="btn btn-outline" 
+                  style={{ width: '100%', marginTop: '16px', justifyContent: 'center' }}
+                  onClick={onPreviewExport}
+                  disabled={isPreviewLoading}
+                >
+                  <Image size={16} /> 
+                  {isPreviewLoading ? 'Generating...' : 'Preview Export Quality'}
+                </button>
               )}
             </div>
           )}

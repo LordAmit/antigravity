@@ -47,4 +47,28 @@ describe('useStore', () => {
     expect(result.current.state.config.exifPills.customCameraText).toBe('Overridden Camera');
     expect(result.current.state.config.layout.innerBorderTopScale).toBe(initialConfig.layout.innerBorderTopScale);
   });
+
+  it('updateImageCaption specifically updates the caption for the correct image', () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => <StoreProvider>{children}</StoreProvider>;
+    const { result } = renderHook(() => useStore(), { wrapper });
+
+    const mockImage1: ImageItem = { id: '1', file: new File([], '1.jpg'), objectUrl: 'blob:1', width: 100, height: 100, exif: {} };
+    const mockImage2: ImageItem = { id: '2', file: new File([], '2.jpg'), objectUrl: 'blob:2', width: 100, height: 100, exif: {} };
+
+    act(() => {
+      result.current.addImage(mockImage1);
+      result.current.addImage(mockImage2);
+    });
+
+    act(() => {
+      result.current.updateImageCaption('1', 'Custom Caption 1');
+    });
+
+    const img1 = result.current.state.images.find(img => img.id === '1');
+    const img2 = result.current.state.images.find(img => img.id === '2');
+
+    expect(img1?.captionText).toBe('Custom Caption 1');
+    // Ensure image 2 was not modified
+    expect(img2?.captionText).toBeUndefined();
+  });
 });

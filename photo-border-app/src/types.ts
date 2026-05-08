@@ -17,6 +17,7 @@ export interface ImageItem {
   height: number;
   exif: ExifData;
   rawExifStr?: string | null;
+  captionText?: string;
 }
 
 export interface LayoutSettings {
@@ -50,8 +51,7 @@ export interface TextLabel {
   position: "Top Left" | "Top Center" | "Top Right" | "Middle Left" | "Center" | "Middle Right" | "Bottom Left" | "Bottom Center" | "Bottom Right";
   positionXScale: number;
   positionYScale: number;
-  paddingYScale: number;
-  paddingXScale: number;
+
   fontWeight?: string; // e.g. "normal", "bold", "700"
   fontStyle?: string;  // e.g. "normal", "italic"
   customFontDataUrl?: string; // stores base64 of uploaded font for preset persistence
@@ -60,8 +60,8 @@ export interface TextLabel {
 export interface LogoSettings {
   dataUrl: string | null; 
   sizeScale: number;
-  placement: "Left of Text" | "Right of Text";
-  gapScale: number; // space between logo and text
+  position: "Top Left" | "Top Center" | "Top Right" | "Middle Left" | "Center" | "Middle Right" | "Bottom Left" | "Bottom Center" | "Bottom Right";
+
   offsetXScale: number;
   offsetYScale: number;
 }
@@ -85,8 +85,6 @@ export interface ExifPillSettings {
   borderColor: string;
   fontFamily: string;
   fontSizeScale: number;
-  paddingYScale: number;
-  paddingXScale: number;
   borderWidthScale: number;
   internalPaddingScale: number;
   pillTextSpacingScale: number;
@@ -94,11 +92,17 @@ export interface ExifPillSettings {
   customLensText?: string;
 }
 
+export interface ExportSettings {
+  quality: number; // 1 to 100
+  maxResolution: "Original" | "4K" | "Instagram";
+}
+
 export interface AppConfig {
   layout: LayoutSettings;
   labels: TextLabel[];
   logo: LogoSettings;
   exifPills: ExifPillSettings;
+  export: ExportSettings;
 }
 
 export interface AppState {
