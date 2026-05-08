@@ -12,9 +12,9 @@ export const defaultConfig: AppConfig = {
     borderWidthScale: 0.05,
     imagePaddingScale: 0.02,
     innerBorderColor: "#ffffff",
-    innerBorderMode: "custom",
+    innerBorderMode: "polaroid",
     innerBorderTopScale: 0.02,
-    innerBorderBottomScale: 0.18, // Deep Polaroid lip for better spacing
+    innerBorderBottomScale: 0.12, // Standard Polaroid lip for preset consistency
     innerBorderSideScale: 0.02,
     imageRadiusScale: 0,
     innerImageRadiusScale: 0,
@@ -33,7 +33,7 @@ export const defaultConfig: AppConfig = {
       strokeWidthScale: 0,
       position: "Bottom Center",
       positionXScale: 0,
-      positionYScale: -0.03,
+      positionYScale: -0.02,
 
       fontWeight: "normal",
       fontStyle: "normal",
@@ -58,7 +58,7 @@ export const defaultConfig: AppConfig = {
     showDate: false,
     position: "Bottom Center",
     positionXScale: 0,
-    positionYScale: 0.03,
+    positionYScale: 0.02,
     boxColor: "#ffffff",
     textColor: "#1e293b",
     textStrokeColor: "#000000",

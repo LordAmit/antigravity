@@ -195,6 +195,38 @@ const SidebarControls: React.FC<SidebarControlsProps> = ({ onPreviewExport, isPr
     setOpenSection(openSection === section ? '' : section);
   };
 
+  const projectedDimensions = React.useMemo(() => {
+    if (!activeImageObj) return null;
+    let overrideMaxRes = 8000;
+    if (config.export?.maxResolution === "4K") overrideMaxRes = 3840;
+    if (config.export?.maxResolution === "Facebook") overrideMaxRes = 2048;
+    if (config.export?.maxResolution === "Instagram") overrideMaxRes = 1350;
+
+    let scaleLimit = 1;
+    const longestEdge = Math.max(activeImageObj.width, activeImageObj.height);
+    if (longestEdge > overrideMaxRes) {
+      scaleLimit = overrideMaxRes / longestEdge;
+    }
+
+    let targetRatio = activeImageObj.width / activeImageObj.height;
+    if (config.layout.aspectRatio !== "Original") {
+      const [w, h] = config.layout.aspectRatio.split(':').map(Number);
+      if (w && h) targetRatio = w / h;
+    }
+
+    let baseLength = longestEdge * scaleLimit;
+    let cWidth, cHeight;
+    if (targetRatio > 1) { 
+      cWidth = baseLength;
+      cHeight = baseLength / targetRatio;
+    } else { 
+      cHeight = baseLength;
+      cWidth = baseLength * targetRatio;
+    }
+
+    return { w: Math.round(cWidth), h: Math.round(cHeight) };
+  }, [activeImageObj, config.export?.maxResolution, config.layout.aspectRatio]);
+
   return (
     <div className="sidebar">
       <div className="sidebar-content">
@@ -953,8 +985,14 @@ const SidebarControls: React.FC<SidebarControlsProps> = ({ onPreviewExport, isPr
                 >
                   <option value="Original">Original (No Scaling)</option>
                   <option value="4K">4K (Max 3840px)</option>
+                  <option value="Facebook">Facebook (Max 2048px)</option>
                   <option value="Instagram">Instagram (Max 1350px)</option>
                 </select>
+                {projectedDimensions && (
+                  <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', textAlign: 'right' }}>
+                    Output: {projectedDimensions.w} × {projectedDimensions.h} px
+                  </div>
+                )}
               </div>
 
               <SliderRow

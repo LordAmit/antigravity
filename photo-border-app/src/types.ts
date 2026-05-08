@@ -94,7 +94,7 @@ export interface ExifPillSettings {
 
 export interface ExportSettings {
   quality: number; // 1 to 100
-  maxResolution: "Original" | "4K" | "Instagram";
+  maxResolution: "Original" | "4K" | "Facebook" | "Instagram";
 }
 
 export interface AppConfig {

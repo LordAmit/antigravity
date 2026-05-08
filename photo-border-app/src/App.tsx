@@ -183,6 +183,7 @@ function App() {
 
       let overrideMaxRes = 8000;
       if (state.config.export?.maxResolution === "4K") overrideMaxRes = 3840;
+      if (state.config.export?.maxResolution === "Facebook") overrideMaxRes = 2048;
       if (state.config.export?.maxResolution === "Instagram") overrideMaxRes = 1350;
 
       // Render to offscreen canvas
@@ -226,6 +227,7 @@ function App() {
 
     let overrideMaxRes = 8000;
     if (state.config.export?.maxResolution === "4K") overrideMaxRes = 3840;
+    if (state.config.export?.maxResolution === "Facebook") overrideMaxRes = 2048;
     if (state.config.export?.maxResolution === "Instagram") overrideMaxRes = 1350;
 
     renderPhotoBorder(canvas, targetImage, img, state.config, logoImg, overrideMaxRes);
@@ -265,6 +267,7 @@ function App() {
 
     let overrideMaxRes = 8000;
     if (state.config.export?.maxResolution === "4K") overrideMaxRes = 3840;
+    if (state.config.export?.maxResolution === "Facebook") overrideMaxRes = 2048;
     if (state.config.export?.maxResolution === "Instagram") overrideMaxRes = 1350;
 
     renderPhotoBorder(canvas, targetImage, img, state.config, logoImg, overrideMaxRes);
