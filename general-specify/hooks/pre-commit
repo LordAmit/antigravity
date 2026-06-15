@@ -1,0 +1,4 @@
+#!/bin/sh
+# Run Spec Linting and Spec Traceability validation before commit
+npm run check-spec-drift
+npm run lint-specs && npm run verify-specs && npm run coverage
