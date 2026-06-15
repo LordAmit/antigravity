@@ -18,11 +18,11 @@ graph TD
 ## 2. File Responsibilities
 
 ### UI & Layout
-*   **File:** [index.html](file:///Users/amitsealami/git/antigravity/quotemaker/index.html)
+*   **File:** [index.html](index.html)
 *   **Purpose:** Provides the structural layout (split-screen editor vs. locked 3:4 preview canvas) and utility control elements (font selectors, sliders, color inputs, upload button).
 
 ### Core Logic & State Management
-*   **File:** [app.js](file:///Users/amitsealami/git/antigravity/quotemaker/app.js)
+*   **File:** [app.js](app.js)
 *   **Purpose:** Implements:
     *   State tracking for customization inputs (colors, active font, size, watermark).
     *   Markdown parser integration (using local `marked` parser).
@@ -32,11 +32,11 @@ graph TD
     *   Reset handler to restore color pickers, font selectors, and font sizes to original defaults.
 
 ### Design System & Styling
-*   **File:** [style.css](file:///Users/amitsealami/git/antigravity/quotemaker/style.css)
+*   **File:** [style.css](style.css)
 *   **Purpose:** Standardizes the UI layout, styling for control panels, typography, custom highlighter CSS styling, custom background selections, and locking the 3:4 aspect ratio of the editor preview container. Includes explicit styling for custom scrollbars and utility reset buttons.
 
 ### Local Libraries (Offline/PWA support)
 *   **Files:** 
-    *   [marked.min.js](file:///Users/amitsealami/git/antigravity/quotemaker/lib/marked.min.js)
-    *   [html2canvas.min.js](file:///Users/amitsealami/git/antigravity/quotemaker/lib/html2canvas.min.js)
+    *   [marked.min.js](lib/marked.min.js)
+    *   [html2canvas.min.js](lib/html2canvas.min.js)
 *   **Purpose:** Local minified vendor dependencies to allow standard Markdown parsing and canvas image export without relying on network CDNs.
