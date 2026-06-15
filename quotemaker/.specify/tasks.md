@@ -33,11 +33,11 @@ When a new feature or bug fix is requested:
 *   **Requirements Changed:** [specify.md:17-19](file:///Users/amitsealami/git/antigravity/quotemaker/.specify/specify.md#L17-L19)
 *   **Architecture Changed:** [plan.md:31-36](file:///Users/amitsealami/git/antigravity/quotemaker/.specify/plan.md#L31-L36)
 *   **Action Items:**
-    *   `[ ]` Add a reset button (`#btn-reset-design`) inside customization settings in `index.html`.
-    *   `[ ]` Implement scrollbars styling and `.btn-secondary` in `style.css`.
-    *   `[ ]` Implement resetDesignSettings() handler in `app.js`.
-    *   `[ ]` Implement editor keyboard shortcut listeners (Ctrl/Cmd + B, I, U) in `app.js`.
+    *   `[x]` Add a reset button (`#btn-reset-design`) inside customization settings in `index.html`.
+    *   `[x]` Implement scrollbars styling and `.btn-secondary` in `style.css`.
+    *   `[x]` Implement resetDesignSettings() handler in `app.js`.
+    *   `[x]` Implement editor keyboard shortcut listeners (Ctrl/Cmd + B, I, U) in `app.js`.
 *   **Verification Checklist:**
-    *   `[ ]` Verify shortcuts wrap selections correctly.
-    *   `[ ]` Verify scrollbars are visible when settings are expanded.
-    *   `[ ]` Verify reset button restores colors, fonts, and sizes to original defaults.
+    *   `[x]` Verify shortcuts wrap selections correctly.
+    *   `[x]` Verify scrollbars are visible when settings are expanded.
+    *   `[x]` Verify reset button restores colors, fonts, and sizes to original defaults.
