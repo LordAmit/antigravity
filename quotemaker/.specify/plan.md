@@ -30,6 +30,7 @@ graph TD
     *   Image export logic using local `html2canvas` to render the preview to a 1536x2048 PNG.
     *   Keyboard shortcut event listeners on the markdown textarea (`Cmd/Ctrl` + `B`/`I`/`U`) to wrap selections.
     *   Reset handler to restore color pickers, font selectors, and font sizes to original defaults.
+    *   A simple updateBackgroundTexture() function to toggle background class names on the export canvas, allowing CSS to load high-resolution static background images from the `images/` directory.
 
 ### Design System & Styling
 *   **File:** [style.css](style.css)

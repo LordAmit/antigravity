@@ -35,73 +35,87 @@
                 <details class="design-settings">
                     <summary>Customization Settings</summary>
                     <div class="settings-content">
-                        <div class="control-group inline-group">
-                            <div class="control-item">
-                                <label for="color-header">Header</label>
-                                <input type="color" id="color-header" value="#ffd54f">
+                        <!-- Header Style Group -->
+                        <div class="settings-section">
+                            <h3 class="settings-section-title">Header Style</h3>
+                            
+                            <div class="control-group inline-group">
+                                <div class="control-item">
+                                    <label for="color-header">Header Highlight</label>
+                                    <input type="color" id="color-header" value="#ffd54f">
+                                </div>
                             </div>
-                            <div class="control-item">
-                                <label for="color-bold">Bold</label>
-                                <input type="color" id="color-bold" value="#a3e635">
+
+                            <div class="control-group">
+                                <label for="font-header-select">Header Font</label>
+                                <select id="font-header-select">
+                                    <option value="Georgia, serif">Georgia (Classic Serif)</option>
+                                    <option value="'Times New Roman', serif">Times New Roman</option>
+                                    <option value="system-ui, sans-serif">System Sans-Serif</option>
+                                    <option value="'Courier New', monospace">Courier Monospace</option>
+                                </select>
                             </div>
-                            <div class="control-item">
-                                <label for="color-italic">Underline</label>
-                                <input type="color" id="color-italic" value="#ef4444">
-                            </div>
-                        </div>
- 
-                        <div class="control-group">
-                            <label for="font-header-select">Header Font</label>
-                            <select id="font-header-select">
-                                <option value="Georgia, serif">Georgia (Classic Serif)</option>
-                                <option value="'Times New Roman', serif">Times New Roman</option>
-                                <option value="system-ui, sans-serif">System Sans-Serif</option>
-                                <option value="'Courier New', monospace">Courier Monospace</option>
-                            </select>
-                        </div>
- 
-                        <div class="control-group">
-                            <label for="font-body-select">Body Font</label>
-                            <select id="font-body-select">
-                                <option value="Georgia, serif">Georgia (Classic Serif)</option>
-                                <option value="'Times New Roman', serif">Times New Roman</option>
-                                <option value="system-ui, sans-serif">System Sans-Serif</option>
-                                <option value="'Courier New', monospace">Courier Monospace</option>
-                            </select>
-                        </div>
- 
-                        <div class="control-group">
-                            <label for="font-size-header">Header Size (<span id="font-size-header-val">36</span>px)</label>
-                            <div class="font-size-control">
-                                <button type="button" class="btn-adjust" id="btn-header-dec"
-                                    aria-label="Decrease header font size">-</button>
-                                <input type="range" id="font-size-header" min="16" max="72" value="36">
-                                <button type="button" class="btn-adjust" id="btn-header-inc"
-                                    aria-label="Increase header font size">+</button>
+
+                            <div class="control-group">
+                                <label for="font-size-header">Header Size (<span id="font-size-header-val">36</span>px)</label>
+                                <div class="font-size-control">
+                                    <button type="button" class="btn-adjust" id="btn-header-dec"
+                                        aria-label="Decrease header font size">-</button>
+                                    <input type="range" id="font-size-header" min="16" max="72" value="36">
+                                    <button type="button" class="btn-adjust" id="btn-header-inc"
+                                        aria-label="Increase header font size">+</button>
+                                </div>
                             </div>
                         </div>
- 
-                        <div class="control-group">
-                            <label for="font-size-body">Body Size (<span id="font-size-body-val">28</span>px)</label>
-                            <div class="font-size-control">
-                                <button type="button" class="btn-adjust" id="btn-body-dec"
-                                    aria-label="Decrease body font size">-</button>
-                                <input type="range" id="font-size-body" min="16" max="72" value="28">
-                                <button type="button" class="btn-adjust" id="btn-body-inc"
-                                    aria-label="Increase body font size">+</button>
+
+                        <!-- Body Style Group -->
+                        <div class="settings-section">
+                            <h3 class="settings-section-title">Body Style</h3>
+
+                            <div class="control-group inline-group">
+                                <div class="control-item">
+                                    <label for="color-bold">Bold Color</label>
+                                    <input type="color" id="color-bold" value="#a3e635">
+                                </div>
+                                <div class="control-item">
+                                    <label for="color-italic">Underline Color</label>
+                                    <input type="color" id="color-italic" value="#ef4444">
+                                </div>
+                            </div>
+
+                            <div class="control-group">
+                                <label for="font-body-select">Body Font</label>
+                                <select id="font-body-select">
+                                    <option value="Georgia, serif">Georgia (Classic Serif)</option>
+                                    <option value="'Times New Roman', serif">Times New Roman</option>
+                                    <option value="system-ui, sans-serif">System Sans-Serif</option>
+                                    <option value="'Courier New', monospace">Courier Monospace</option>
+                                </select>
+                            </div>
+
+                            <div class="control-group">
+                                <label for="font-size-body">Body Size (<span id="font-size-body-val">28</span>px)</label>
+                                <div class="font-size-control">
+                                    <button type="button" class="btn-adjust" id="btn-body-dec"
+                                        aria-label="Decrease body font size">-</button>
+                                    <input type="range" id="font-size-body" min="16" max="72" value="28">
+                                    <button type="button" class="btn-adjust" id="btn-body-inc"
+                                        aria-label="Increase body font size">+</button>
+                                </div>
                             </div>
                         </div>
- 
+
+                        <!-- Global Design & Assets Group -->
                         <div class="control-group">
-                            <label for="bg-select">Background Texture</label>
+                            <label for="bg-select">Background Template</label>
                             <select id="bg-select">
-                                <option value="bg-paper-warm">Warm Book Paper</option>
-                                <option value="bg-paper-antique">Antique Parchment</option>
-                                <option value="bg-paper-white">Minimal White</option>
-                                <option value="bg-paper-dark">Dark Clean Slate</option>
+                                <option value="template-1">Template 1</option>
+                                <option value="template-2">Template 2</option>
+                                <option value="template-3">Template 3</option>
+                                <option value="template-4">Template 4</option>
                             </select>
                         </div>
- 
+
                         <div class="control-group">
                             <label for="watermark-input">Watermark Text</label>
                             <input type="text" id="watermark-input" value="@amitsealami" placeholder="e.g. @username">
@@ -110,7 +124,7 @@
                                 <label for="watermark-toggle">Show Watermark</label>
                             </div>
                         </div>
- 
+
                         <div class="control-group">
                             <label for="font-upload">Upload Custom Font (.ttf, .otf, .woff, .woff2)</label>
                             <div class="file-upload-wrapper">
@@ -121,7 +135,7 @@
                                 <!-- Dynamic list of custom fonts -->
                             </div>
                         </div>
- 
+
                         <div class="control-group">
                             <button type="button" id="btn-reset-design" class="btn-secondary">Reset Colors & Sizes</button>
                         </div>
@@ -142,7 +156,7 @@
         <main class="preview-area" aria-label="Preview Container">
             <div class="preview-aspect-ratio-box">
                 <!-- The actual DOM node we capture for exporting (exactly 3:4) -->
-                <div id="export-canvas" class="export-canvas bg-paper-warm">
+                <div id="export-canvas" class="export-canvas template-1">
                     <div class="canvas-inner">
                         <div id="rendered-content" class="rendered-content">
                             <!-- Dynamic Markdown Render Content -->
@@ -153,17 +167,6 @@
             </div>
         </main>
     </div>
-
-    <!-- Hidden SVG paper filter for realistic procedural texturing -->
-    <svg style="position: absolute; width: 0; height: 0; pointer-events: none;" xmlns="http://www.w3.org/2000/svg">
-        <filter id="cotton-paper-filter">
-            <feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="5" result="noise" />
-            <feDiffuseLighting in="noise" lighting-color="#ffffff" surfaceScale="2.5" result="light">
-                <feDistantLight azimuth="45" elevation="55" />
-            </feDiffuseLighting>
-            <feBlend mode="multiply" in="SourceGraphic" in2="light" />
-        </filter>
-    </svg>
 
     <script src="app.js"></script>
 </body>

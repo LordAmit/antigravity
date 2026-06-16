@@ -20,7 +20,7 @@ This document specifies the behavior of the Quote Maker web application using EA
 
 ### Preview Panel (3:4 Canvas)
 *   `[REQ-QM-PREVIEW-01]` The preview panel shall be constrained and locked to a 3:4 aspect ratio.
-*   `[REQ-QM-PREVIEW-02]` The preview panel shall render with the selected background texture choice (defaulting to a paper texture).
+*   `[REQ-QM-PREVIEW-02]` The preview panel shall render with the selected background texture choice loading high-resolution static images from the `images/` directory. The backgrounds shall cover the canvas fully without repeat seams, and must be fully preserved in the exported download image.
 *   `[REQ-QM-PREVIEW-03]` The application shall highlight headers (`<h1>`, `<h2>`, etc.) with the configured header highlight color.
 *   `[REQ-QM-PREVIEW-04]` The application shall highlight bold text (`<strong>`) with the configured bold highlight color.
 *   `[REQ-QM-PREVIEW-05]` The application shall underline underlined text (`<u>`) with the configured underline color.

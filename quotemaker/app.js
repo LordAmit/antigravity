@@ -47,7 +47,7 @@ And we can <u>underline</u> **texts**.`;
 // Initialize Application
 async function init() {
     markdownInput.value = defaultMarkdown;
-    
+
     // Bind event listeners
     markdownInput.addEventListener('input', updatePreview);
     colorHeader.addEventListener('input', updateHighlightColors);
@@ -55,10 +55,10 @@ async function init() {
     colorItalic.addEventListener('input', updateHighlightColors);
     fontHeaderSelect.addEventListener('change', updateHeaderFont);
     fontBodySelect.addEventListener('change', updateBodyFont);
-    
+
     fontSizeHeaderSlider.addEventListener('input', updateHeaderFontSize);
     fontSizeBodySlider.addEventListener('input', updateBodyFontSize);
-    
+
     bgSelect.addEventListener('change', updateBackgroundTexture);
     watermarkInput.addEventListener('input', updateWatermark);
     watermarkToggle.addEventListener('change', updateWatermarkVisibility);
@@ -70,7 +70,7 @@ async function init() {
     }
     markdownInput.addEventListener('keydown', handleEditorShortcuts);
     window.addEventListener('resize', resizePreview);
-    
+
     btnHeaderDec.addEventListener('click', () => adjustHeaderFontSize(-2));
     btnHeaderInc.addEventListener('click', () => adjustHeaderFontSize(2));
     btnBodyDec.addEventListener('click', () => adjustBodyFontSize(-2));
@@ -80,7 +80,7 @@ async function init() {
     const appContainer = document.querySelector('.app-container');
     const tabEditor = document.getElementById('tab-editor');
     const tabPreview = document.getElementById('tab-preview');
-    
+
     tabEditor.addEventListener('click', () => {
         tabEditor.classList.add('active');
         tabPreview.classList.remove('active');
@@ -88,7 +88,7 @@ async function init() {
         appContainer.classList.remove('show-preview');
         resizePreview();
     });
-    
+
     tabPreview.addEventListener('click', () => {
         tabPreview.classList.add('active');
         tabEditor.classList.remove('active');
@@ -132,9 +132,27 @@ function updatePreview() {
                 .replace(/\*(.*)\*/gim, '<em>$1</em>')
                 .replace(/\n/gim, '<br>');
         }
+        wrapBoldWords(renderedContent);
     } catch (err) {
         console.error("Error parsing markdown", err);
     }
+}
+
+// Helper to wrap bold words in individual spans to prevent html2canvas wrap rendering overlap bugs
+function wrapBoldWords(container) {
+    const elements = container.querySelectorAll('strong');
+    elements.forEach(el => {
+        const parts = el.textContent.split(/(\s+)/);
+        el.innerHTML = '';
+        parts.forEach(part => {
+            if (part.length > 0) {
+                const span = document.createElement('span');
+                span.className = 'highlight-word';
+                span.textContent = part;
+                el.appendChild(span);
+            }
+        });
+    });
 }
 
 // Custom highlight colors handler
@@ -197,7 +215,7 @@ function updateWatermarkVisibility() {
 function openDB() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
-        
+
         request.onupgradeneeded = (e) => {
             const dbInstance = e.target.result;
             if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
@@ -214,7 +232,7 @@ function saveFontToDB(name, buffer, fileType) {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction(STORE_NAME, 'readwrite');
         const store = transaction.objectStore(STORE_NAME);
-        
+
         const request = store.put({
             name: name,
             data: buffer,
@@ -285,7 +303,7 @@ function addFontOption(name) {
         optionHeader.textContent = `${name} (Uploaded)`;
         fontHeaderSelect.appendChild(optionHeader);
     }
-    
+
     // Avoid duplicates in Body select
     if (![...fontBodySelect.options].some(opt => opt.value === `'${name}', sans-serif`)) {
         const optionBody = document.createElement('option');
@@ -303,13 +321,13 @@ function addFontToUIList(name) {
         <span>${name}</span>
         <button class="btn-delete-font" data-name="${name}" aria-label="Delete font">✕</button>
     `;
-    
+
     item.querySelector('.btn-delete-font').addEventListener('click', async (e) => {
         const fontName = e.target.getAttribute('data-name');
         await removeFont(fontName);
         item.remove();
     });
-    
+
     uploadedFontsList.appendChild(item);
 }
 
@@ -320,7 +338,7 @@ async function handleFontUpload(e) {
 
     // Use filename (minus extension) as Font Face name
     const fontName = file.name.replace(/\.[^/.]+$/, "");
-    
+
     const reader = new FileReader();
     reader.onload = async (event) => {
         const buffer = event.target.result;
@@ -329,7 +347,7 @@ async function handleFontUpload(e) {
             await registerFontFace(fontName, buffer);
             addFontOption(fontName);
             addFontToUIList(fontName);
-            
+
             // Apply to body font instantly by default
             fontBodySelect.value = `'${fontName}', sans-serif`;
             updateBodyFont();
@@ -344,25 +362,25 @@ async function handleFontUpload(e) {
 async function removeFont(name) {
     try {
         await deleteFontFromDB(name);
-        
+
         // Find and remove from Header select
         const optionHeader = [...fontHeaderSelect.options].find(opt => opt.value === `'${name}', sans-serif`);
         if (optionHeader) {
             fontHeaderSelect.removeChild(optionHeader);
         }
-        
+
         // Find and remove from Body select
         const optionBody = [...fontBodySelect.options].find(opt => opt.value === `'${name}', sans-serif`);
         if (optionBody) {
             fontBodySelect.removeChild(optionBody);
         }
-        
+
         // Fallback font selections
         fontHeaderSelect.value = "Georgia, serif";
         fontBodySelect.value = "Georgia, serif";
         updateHeaderFont();
         updateBodyFont();
-        
+
         // Find registered font face and delete it
         for (const fontFace of document.fonts) {
             if (fontFace.family === name) {
@@ -394,13 +412,20 @@ function downloadImage() {
             useCORS: true,
             allowTaint: true,
             backgroundColor: null,
-            logging: false
+            logging: false,
+            letterRendering: true,
+            onclone: (clonedDoc) => {
+                // Sync custom font faces to the cloned iframe context
+                document.fonts.forEach(font => {
+                    clonedDoc.fonts.add(font);
+                });
+            }
         }).then((canvas) => {
             const link = document.createElement('a');
-            link.download = `quote_${Date.now()}.png`;
-            link.href = canvas.toDataURL('image/png');
+            link.download = `quote_${Date.now()}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 0.95);
             link.click();
-            
+
             btnDownload.textContent = "Download Image (3:4)";
             btnDownload.disabled = false;
         }).catch((err) => {
@@ -431,7 +456,7 @@ function resetDesignSettings() {
     fontBodySelect.value = 'Georgia, serif';
     fontSizeHeaderSlider.value = 36;
     fontSizeBodySlider.value = 28;
-    
+
     updateHighlightColors();
     updateHeaderFontSize();
     updateBodyFontSize();
@@ -469,7 +494,7 @@ function handleEditorShortcuts(e) {
 
     // Check if the selected text is already wrapped in these markers
     const hasMarker = text.substring(start - markerStart.length, start) === markerStart &&
-                      text.substring(end, end + markerEnd.length) === markerEnd;
+        text.substring(end, end + markerEnd.length) === markerEnd;
 
     let newText = '';
     let newSelectionStart = start;
@@ -477,16 +502,16 @@ function handleEditorShortcuts(e) {
 
     if (hasMarker) {
         // Unwrap the markers
-        newText = text.substring(0, start - markerStart.length) + 
-                  selectedText + 
-                  text.substring(end + markerEnd.length);
+        newText = text.substring(0, start - markerStart.length) +
+            selectedText +
+            text.substring(end + markerEnd.length);
         newSelectionStart = start - markerStart.length;
         newSelectionEnd = end - markerStart.length;
     } else {
         // Wrap the markers
-        newText = text.substring(0, start) + 
-                  markerStart + selectedText + markerEnd + 
-                  text.substring(end);
+        newText = text.substring(0, start) +
+            markerStart + selectedText + markerEnd +
+            text.substring(end);
         newSelectionStart = start + markerStart.length;
         newSelectionEnd = end + markerStart.length;
     }
@@ -501,17 +526,19 @@ function resizePreview() {
     const previewArea = document.querySelector('.preview-area');
     const box = document.querySelector('.preview-aspect-ratio-box');
     if (!previewArea || !box) return;
-    
+
     const padding = 32; // total space margins
     const availableWidth = previewArea.clientWidth - padding;
     const availableHeight = previewArea.clientHeight - padding;
-    
+
     const scaleWidth = availableWidth / 600;
     const scaleHeight = availableHeight / 800;
     const scale = Math.min(1, scaleWidth, scaleHeight);
-    
+
     box.style.setProperty('--preview-scale', scale);
 }
+
+
 
 // Launch the app
 window.addEventListener('DOMContentLoaded', init);

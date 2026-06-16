@@ -63,6 +63,7 @@ body {
 /* Scrollable container for main inputs and customization settings */
 .sidebar-content-scrollable {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #334155 #0f172a;
@@ -473,6 +474,27 @@ input[type="text"]:focus {
     gap: 0.85rem;
 }
 
+.settings-section {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.85rem;
+    background-color: rgba(255, 255, 255, 0.02);
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.settings-section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.35rem;
+}
+
 .preview-aspect-ratio-box {
     position: relative;
     width: 600px;
@@ -565,7 +587,6 @@ input[type="text"]:focus {
     }
 }
 
-/* Export canvas (This gets captured by html2canvas) */
 .export-canvas {
     position: absolute;
     top: 0;
@@ -579,6 +600,9 @@ input[type="text"]:focus {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .canvas-inner {
@@ -586,40 +610,33 @@ input[type="text"]:focus {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    position: relative;
+    z-index: 1;
 }
 
 /* Background textures using SVGs & Gradients for offline realism */
-.bg-paper-warm {
+.template-1 {
+    color: #1c1917;
     background-color: #f3efe5;
-    background-image:
-        linear-gradient(to right, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.06) 3%, rgba(0, 0, 0, 0) 12%),
-        linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(0, 0, 0, 0.14) 100%);
-    filter: url(#cotton-paper-filter);
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.06) 3%, rgba(0, 0, 0, 0) 12%), linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, rgba(0, 0, 0, 0.14) 100%), url('images/byunilho-papertexture-2061710.jpg');
 }
 
-.bg-paper-antique {
+.template-2 {
+    color: #1c1917;
     background-color: #dfd2bb;
-    background-image:
-        linear-gradient(to right, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.08) 3%, rgba(0, 0, 0, 0) 12%),
-        linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(0, 0, 0, 0.18) 100%);
-    filter: url(#cotton-paper-filter);
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.072) 3%, rgba(0, 0, 0, 0) 12%), linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, rgba(0, 0, 0, 0.18) 100%), url('images/olga-thelavart-vS3idIiYxX0-unsplash.jpg');
 }
 
-.bg-paper-white {
+.template-3 {
+    color: #111111;
     background-color: #f8f8f8;
-    background-image:
-        linear-gradient(to right, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.04) 3%, rgba(0, 0, 0, 0) 12%),
-        linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(0, 0, 0, 0.1) 100%);
-    filter: url(#cotton-paper-filter);
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.048) 3%, rgba(0, 0, 0, 0) 12%), linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, rgba(0, 0, 0, 0.10) 100%), url('images/kiwihug-XRTlS6TYK1M-unsplash.jpg');
 }
 
-.bg-paper-dark {
-    background-color: #1e1e24;
-    color: #f4f4f5;
-    background-image:
-        linear-gradient(to right, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.08) 3%, rgba(0, 0, 0, 0) 12%),
-        linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(0, 0, 0, 0.22) 100%);
-    filter: url(#cotton-paper-filter);
+.template-4 {
+    color: #1c1917;
+    background-color: #dfd2bb;
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.10) 3%, rgba(0, 0, 0, 0) 12%), linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, rgba(0, 0, 0, 0.22) 100%), url('images/lilydust-old-2012064.jpg');
 }
 
 /* Rendered typography and Markdown highlights */
@@ -627,6 +644,7 @@ input[type="text"]:focus {
     font-size: var(--font-size-body, 28px);
     line-height: 1.8;
     font-family: var(--font-family-body);
+    letter-spacing: 0.02px;
 }
 
 /* Headers highlight yellow */
@@ -638,49 +656,31 @@ input[type="text"]:focus {
 .rendered-content h6 {
     font-family: var(--font-family-header);
     font-size: var(--font-size-header, 36px);
-    display: inline;
+    display: block;
+    width: fit-content;
     font-weight: 700;
     background-color: var(--highlight-header-color);
-    box-shadow: 6px 0 0 var(--highlight-header-color), -6px 0 0 var(--highlight-header-color);
-    padding: 2px 0;
-    box-decoration-break: clone;
-    -webkit-box-decoration-break: clone;
+    padding: 2px 6px;
+    border-radius: 4px;
     line-height: 1.5;
-}
-
-/* Add block spacing before and after inline headers */
-.rendered-content h1::before,
-.rendered-content h2::before,
-.rendered-content h3::before,
-.rendered-content h4::before,
-.rendered-content h5::before,
-.rendered-content h6::before {
-    content: "";
-    display: block;
     margin-top: 1.25rem;
-}
-
-.rendered-content h1::after,
-.rendered-content h2::after,
-.rendered-content h3::after,
-.rendered-content h4::after,
-.rendered-content h5::after,
-.rendered-content h6::after {
-    content: "";
-    display: block;
     margin-bottom: 1.25rem;
 }
 
 /* Bold text highlight neon green */
 .rendered-content strong {
     font-weight: 700;
-    background-color: var(--highlight-bold-color);
-    box-shadow: 0 0 0 4px var(--highlight-bold-color);
-    padding: 0 2px;
-    box-decoration-break: clone;
-    -webkit-box-decoration-break: clone;
-    display: inline;
 }
+.rendered-content strong .highlight-word {
+    background-color: var(--highlight-bold-color);
+    padding: 2px 5px;
+    margin: 0 -3px;
+    display: inline;
+    border-radius: 4px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+}
+
 
 /* Italic text is just normal italics */
 .rendered-content em {
@@ -704,8 +704,8 @@ input[type="text"]:focus {
 .rendered-content ol {
     margin-bottom: 1.4rem;
     padding-left: 2rem;
-    color: #1c1917;
-    /* charcoal black list text */
+    color: inherit;
+    /* inherit theme color */
 }
 
 .rendered-content li {
@@ -728,12 +728,9 @@ input[type="text"]:focus {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
 }
 
-.bg-paper-dark .canvas-watermark {
-    color: #e4e4e7;
-}
-
-.bg-paper-warm .canvas-watermark,
-.bg-paper-antique .canvas-watermark,
-.bg-paper-white .canvas-watermark {
+.template-1 .canvas-watermark,
+.template-2 .canvas-watermark,
+.template-3 .canvas-watermark,
+.template-4 .canvas-watermark {
     color: #27272a;
 }
