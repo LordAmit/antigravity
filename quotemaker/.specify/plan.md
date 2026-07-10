@@ -41,3 +41,11 @@ graph TD
     *   [marked.min.js](lib/marked.min.js)
     *   [html2canvas.min.js](lib/html2canvas.min.js)
 *   **Purpose:** Local minified vendor dependencies to allow standard Markdown parsing and canvas image export without relying on network CDNs.
+
+### Web App Manifest (PWA metadata)
+*   **File:** [manifest.json](manifest.json)
+*   **Purpose:** Metadata to define the PWA configuration, name, start URL, background/theme colors, and app icons for installation.
+
+### Service Worker (PWA Caching)
+*   **File:** [sw.js](sw.js)
+*   **Purpose:** Registers listeners for install, activate, and fetch events to pre-cache resources and serve them offline.

@@ -5,7 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quote Maker - High Resolution Book Quote Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <!-- PWA configuration -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffd54f">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    
     <!-- Local offline dependencies -->
     <script src="lib/marked.min.js"></script>
     <script src="lib/html2canvas.min.js"></script>
@@ -49,8 +57,10 @@
                             <div class="control-group">
                                 <label for="font-header-select">Header Font</label>
                                 <select id="font-header-select">
-                                    <option value="Georgia, serif">Georgia (Classic Serif)</option>
-                                    <option value="'Times New Roman', serif">Times New Roman</option>
+                                    <option value="'Playfair Display', Georgia, serif">Playfair Display (Elegant Serif)</option>
+                                    <option value="Lora, Georgia, serif">Lora (Classic Serif)</option>
+                                    <option value="Georgia, serif">Georgia</option>
+                                    <option value="Inter, system-ui, sans-serif">Inter (Modern Sans)</option>
                                     <option value="system-ui, sans-serif">System Sans-Serif</option>
                                     <option value="'Courier New', monospace">Courier Monospace</option>
                                 </select>
@@ -86,8 +96,10 @@
                             <div class="control-group">
                                 <label for="font-body-select">Body Font</label>
                                 <select id="font-body-select">
-                                    <option value="Georgia, serif">Georgia (Classic Serif)</option>
-                                    <option value="'Times New Roman', serif">Times New Roman</option>
+                                    <option value="Lora, Georgia, serif">Lora (Classic Serif)</option>
+                                    <option value="'Playfair Display', Georgia, serif">Playfair Display</option>
+                                    <option value="Georgia, serif">Georgia</option>
+                                    <option value="Inter, system-ui, sans-serif">Inter (Modern Sans)</option>
                                     <option value="system-ui, sans-serif">System Sans-Serif</option>
                                     <option value="'Courier New', monospace">Courier Monospace</option>
                                 </select>

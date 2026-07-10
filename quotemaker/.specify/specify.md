@@ -34,3 +34,9 @@ This document specifies the behavior of the Quote Maker web application using EA
 ### Image Download
 *   `[REQ-QM-EXPORT-01]` When the user clicks the download button, the application shall export the 3:4 preview canvas as an image file (PNG/JPEG).
 *   `[REQ-QM-EXPORT-02]` The exported image shall have a maximum dimension of 2048px (maintaining the 3:4 ratio: 1536px x 2048px) to ensure high resolution.
+
+## Progressive Web App (PWA)
+*   `[REQ-QM-PWA-01]` When the application is run, it shall register a Service Worker (`sw.js`) to handle offline caching.
+*   `[REQ-QM-PWA-02]` When the application is offline, it shall serve all cached static assets (HTML, CSS, JS, fonts, and background images) from Cache Storage.
+*   `[REQ-QM-PWA-03]` The application shall provide a Web App Manifest (`manifest.json`) specifying application identity (name, colors, standalone display mode, and start URL).
+

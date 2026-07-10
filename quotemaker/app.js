@@ -142,16 +142,36 @@ function updatePreview() {
 function wrapBoldWords(container) {
     const elements = container.querySelectorAll('strong');
     elements.forEach(el => {
-        const parts = el.textContent.split(/(\s+)/);
-        el.innerHTML = '';
+        wrapTextNodes(el);
+    });
+}
+
+function wrapTextNodes(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent;
+        const parts = text.split(/(\s+)/);
+        const fragment = document.createDocumentFragment();
+        
         parts.forEach(part => {
             if (part.length > 0) {
-                const span = document.createElement('span');
-                span.className = 'highlight-word';
-                span.textContent = part;
-                el.appendChild(span);
+                if (/\s+/.test(part)) {
+                    fragment.appendChild(document.createTextNode(part));
+                } else {
+                    const span = document.createElement('span');
+                    span.className = 'highlight-word';
+                    span.textContent = part;
+                    fragment.appendChild(span);
+                }
             }
         });
+        
+        node.parentNode.replaceChild(fragment, node);
+        return;
+    }
+    
+    const children = Array.from(node.childNodes);
+    children.forEach(child => {
+        wrapTextNodes(child);
     });
 }
 
@@ -376,8 +396,8 @@ async function removeFont(name) {
         }
 
         // Fallback font selections
-        fontHeaderSelect.value = "Georgia, serif";
-        fontBodySelect.value = "Georgia, serif";
+        fontHeaderSelect.value = "'Playfair Display', Georgia, serif";
+        fontBodySelect.value = "Lora, Georgia, serif";
         updateHeaderFont();
         updateBodyFont();
 
@@ -452,8 +472,8 @@ function resetDesignSettings() {
     colorHeader.value = '#ffd54f';
     colorBold.value = '#a3e635';
     colorItalic.value = '#ef4444';
-    fontHeaderSelect.value = 'Georgia, serif';
-    fontBodySelect.value = 'Georgia, serif';
+    fontHeaderSelect.value = "'Playfair Display', Georgia, serif";
+    fontBodySelect.value = "Lora, Georgia, serif";
     fontSizeHeaderSlider.value = 36;
     fontSizeBodySlider.value = 28;
 
@@ -542,3 +562,13 @@ function resizePreview() {
 
 // Launch the app
 window.addEventListener('DOMContentLoaded', init);
+
+// Register Service Worker for PWA support
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('Service Worker registered successfully:', reg.scope))
+            .catch(err => console.error('Service Worker registration failed:', err));
+    });
+}
+

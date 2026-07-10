@@ -138,3 +138,21 @@ When a new feature or bug fix is requested:
 *   Verification Checklist:
     *   `[ ]` Verify background images load and scale properly in browser preview.
     *   `[ ]` Verify exported PNG contains high-fidelity textures.
+
+---
+
+### Task-13 - Progressive Web App Conversion
+
+*   **Requirements Changed:** [specify.md:39-42](file:///Users/amitsealami/git/antigravity/quotemaker/.specify/specify.md#L39-L42)
+*   **Architecture Changed:** [plan.md:44-51](file:///Users/amitsealami/git/antigravity/quotemaker/.specify/plan.md#L44-L51)
+*   **Action Items:**
+    *   `[ ]` Create manifest.json.
+    *   `[ ]` Create sw.js (Service Worker caching app.js, index.html, style.css, libs, images).
+    *   `[ ]` Reference manifest.json and Apple meta tags in index.html.
+    *   `[ ]` Register the Service Worker in app.js.
+    *   `[ ]` Generate application icons (512x512, 192x192).
+*   **Verification Checklist:**
+    *   `[ ]` Verify manifest loads correctly in browser.
+    *   `[ ]` Verify service worker activates.
+    *   `[ ]` Verify caching works and application is usable offline.
+

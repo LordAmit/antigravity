@@ -592,7 +592,7 @@ _FALLBACK_THEME = {
         "code_bg": "F0F3FB", "table_head_bg": "E4EAFB",
     },
     "dark": False,
-    "typography": {"heading_tex": "serif", "body_tex": "sans"},
+    "typography": {"heading_tex": "serif"},
 }
 
 
