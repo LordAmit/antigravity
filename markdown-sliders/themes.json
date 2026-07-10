@@ -1,0 +1,110 @@
+{
+  "$comment": "Theme presets for mdslides.py. Palettes are drawn from the Anthropic pptx design guidelines. Each theme separates COMPOSITION (this file) from CONTENT (your markdown). Colors are hex WITHOUT a leading '#'. 'dark' marks palettes whose content background is dark. The 'sandwich' flag renders the title and closing slides on the dark 'primary' color with light content in between (guideline-recommended). Body text is always left-aligned; only titles center. No title underlines or accent stripes are ever emitted.",
+  "themes": {
+    "midnight-executive": {
+      "label": "Midnight Executive",
+      "palette": {
+        "primary": "1E2761",
+        "secondary": "CADCFC",
+        "accent": "3D5AF1",
+        "content_bg": "FFFFFF",
+        "content_fg": "1A1A2E",
+        "muted": "5A5A72",
+        "code_bg": "F0F3FB",
+        "table_head_bg": "E4EAFB"
+      },
+      "dark": false,
+      "sandwich": true,
+      "typography": {
+        "heading_html": "Cambria, 'Times New Roman', Georgia, serif",
+        "body_html": "Calibri, Arial, -apple-system, sans-serif",
+        "heading_tex": "cambria",
+        "body_tex": "sans"
+      }
+    },
+    "warm-terracotta": {
+      "label": "Warm Terracotta",
+      "palette": {
+        "primary": "B85042",
+        "secondary": "A7BEAE",
+        "accent": "8C3B2E",
+        "content_bg": "FFFFFF",
+        "content_fg": "2B2320",
+        "muted": "6E625B",
+        "code_bg": "F4EFE9",
+        "table_head_bg": "EDE4DA"
+      },
+      "dark": false,
+      "sandwich": true,
+      "typography": {
+        "heading_html": "'Bookman Old Style', Cambria, Georgia, serif",
+        "body_html": "Calibri, Arial, sans-serif",
+        "heading_tex": "serif",
+        "body_tex": "sans"
+      }
+    },
+    "teal-trust": {
+      "label": "Teal Trust",
+      "palette": {
+        "primary": "025864",
+        "secondary": "00A896",
+        "accent": "02C39A",
+        "content_bg": "FFFFFF",
+        "content_fg": "10262B",
+        "muted": "4F6B6E",
+        "code_bg": "ECF6F4",
+        "table_head_bg": "D8EEEA"
+      },
+      "dark": false,
+      "sandwich": true,
+      "typography": {
+        "heading_html": "'Century Schoolbook', Cambria, Georgia, serif",
+        "body_html": "Calibri, Arial, sans-serif",
+        "heading_tex": "serif",
+        "body_tex": "sans"
+      }
+    },
+    "charcoal-minimal": {
+      "label": "Charcoal Minimal",
+      "palette": {
+        "primary": "36454F",
+        "secondary": "8A99A3",
+        "accent": "212121",
+        "content_bg": "FFFFFF",
+        "content_fg": "212121",
+        "muted": "6B7780",
+        "code_bg": "F2F2F2",
+        "table_head_bg": "E6E9EB"
+      },
+      "dark": false,
+      "sandwich": true,
+      "typography": {
+        "heading_html": "Cambria, Georgia, 'Times New Roman', serif",
+        "body_html": "Calibri, Arial, sans-serif",
+        "heading_tex": "serif",
+        "body_tex": "sans"
+      }
+    },
+    "premium-dark": {
+      "label": "Premium Dark",
+      "palette": {
+        "primary": "0F1020",
+        "secondary": "2A2D4A",
+        "accent": "7C93FF",
+        "content_bg": "15162A",
+        "content_fg": "ECECF2",
+        "muted": "A0A2B8",
+        "code_bg": "1E2039",
+        "table_head_bg": "2A2D4A"
+      },
+      "dark": true,
+      "sandwich": false,
+      "typography": {
+        "heading_html": "Cambria, Georgia, serif",
+        "body_html": "Calibri, Arial, sans-serif",
+        "heading_tex": "serif",
+        "body_tex": "sans"
+      }
+    }
+  }
+}

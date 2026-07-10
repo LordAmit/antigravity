@@ -1,0 +1,817 @@
+#!/usr/bin/env python3
+"""
+mdslides.py — Compose a slide deck from a manifest + per-slide markdown files,
+render it to PDF via Beamer/LaTeX.
+
+Model
+-----
+A DECK is a manifest markdown file:
+
+    ---
+    theme: midnight-executive
+    title: Building Better Slides
+    author: Amit
+    ---
+
+    - slides/00-title.md
+    - slides/01-intro.md
+    - slides/02-stats.md
+
+Each SLIDE is its own markdown file with optional YAML frontmatter selecting a
+layout, and a body organized into `###` named regions:
+
+    ---
+    layout: two-column
+    ---
+    ### Left
+    - point one
+    - point two
+
+    ### Right
+    ![diagram](diagram.png)
+
+Layouts
+-------
+- default      title (## or frontmatter `title:`) + body markdown
+- title        dark full-bleed opening slide (centered)
+- section      dark full-bleed divider slide (centered)
+- closing      dark full-bleed closing slide (centered)
+- two-column   `### Left` | `### Right`
+- big-stat     `### Stat` (huge) over `### Caption` (small)
+- image-side   `### Image` (a markdown image) beside `### Text`
+
+Design follows Anthropic's pptx guidelines: no title underlines, no accent
+stripes/color bars, white content backgrounds with a dark "sandwich" (dark
+title/section/closing slides), left-aligned body, strong size contrast.
+Composition (theme = palette + typography) is data-driven via themes.json.
+
+Usage
+-----
+    python3 mdslides.py deck.md                     # -> deck.pdf
+    python3 mdslides.py deck.md -o out.pdf
+    python3 mdslides.py deck.md --theme teal-trust  # override manifest theme
+    python3 mdslides.py deck.md --theme-file mine.json
+    python3 mdslides.py deck.md --list-themes
+    python3 mdslides.py deck.md --keep-tex          # keep the generated .tex
+
+Dependencies: PyYAML (pip install pyyaml), a LaTeX toolchain (pdflatex) with
+beamer, booktabs, listings, tcolorbox, adjustbox, ulem, hyperref.
+"""
+
+import argparse
+import os
+import re
+import subprocess
+import sys
+
+
+# ============================================================================
+# Frontmatter + manifest parsing
+# ============================================================================
+
+def _load_yaml(text):
+    """Parse a small YAML subset. Uses PyYAML if available, else a fallback
+    that handles flat key: value pairs and simple '- item' lists."""
+    try:
+        import yaml
+        return yaml.safe_load(text) or {}
+    except ImportError:
+        return _yaml_fallback(text)
+
+
+def _yaml_fallback(text):
+    data = {}
+    list_key = None
+    for raw in text.splitlines():
+        line = raw.rstrip()
+        if not line.strip() or line.strip().startswith("#"):
+            continue
+        m = re.match(r"^(\w[\w-]*):\s*(.*)$", line)
+        if m:
+            key, val = m.group(1), m.group(2).strip()
+            if val == "":
+                data[key] = []
+                list_key = key
+            else:
+                data[key] = _unquote(val)
+                list_key = None
+            continue
+        m = re.match(r"^\s*-\s+(.*)$", line)
+        if m and list_key is not None:
+            data[list_key].append(_unquote(m.group(1).strip()))
+    return data
+
+
+def _unquote(s):
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in "\"'":
+        return s[1:-1]
+    return s
+
+
+def split_frontmatter(text):
+    """Return (frontmatter_dict, body_text). Frontmatter is a leading
+    '---\\n...\\n---' block; absent -> ({}, text)."""
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    m = re.match(r"^---\n(.*?)\n---\n?(.*)$", text, re.DOTALL)
+    if m:
+        return _load_yaml(m.group(1)) or {}, m.group(2)
+    return {}, text
+
+
+def parse_manifest(path):
+    """Parse a deck manifest. Returns (deck_config, [slide_file_paths])."""
+    with open(path, "r", encoding="utf-8") as f:
+        text = f.read()
+    fm, body = split_frontmatter(text)
+
+    # Slide list can come from frontmatter `slides:` or the markdown body list.
+    slide_refs = []
+    if isinstance(fm.get("slides"), list):
+        slide_refs = list(fm["slides"])
+    else:
+        for line in body.splitlines():
+            m = re.match(r"^\s*[-*+]\s+(.*)$", line)
+            if not m:
+                continue
+            item = m.group(1).strip()
+            # Support "- [label](path.md)" and bare "- path.md".
+            lm = re.match(r"^\[[^\]]*\]\(([^)]+)\)$", item)
+            slide_refs.append(lm.group(1) if lm else item)
+
+    base = os.path.dirname(os.path.abspath(path))
+    slide_paths = [
+        ref if os.path.isabs(ref) else os.path.normpath(os.path.join(base, ref))
+        for ref in slide_refs
+    ]
+    return fm, slide_paths
+
+
+def parse_slide_file(path):
+    """Parse one slide file -> a slide dict with frontmatter, layout, regions."""
+    with open(path, "r", encoding="utf-8") as f:
+        text = f.read()
+    fm, body = split_frontmatter(text)
+    layout = (fm.get("layout") or "default").strip().lower()
+
+    regions, free = split_regions(body)
+    return {
+        "path": path,
+        "dir": os.path.dirname(os.path.abspath(path)),
+        "frontmatter": fm,
+        "layout": layout,
+        "title": fm.get("title"),
+        "regions": regions,   # {region_name_lower: [lines]}
+        "body_lines": free,   # lines not under any ### region
+    }
+
+
+def split_regions(body):
+    """Split a slide body into `### Name` regions. Returns (regions, free_lines)
+    where free_lines are lines before the first ### (used by simple layouts)."""
+    regions = {}
+    free = []
+    current = None
+    in_fence = False
+    for raw in body.split("\n"):
+        s = raw.strip()
+        if s.startswith("```"):
+            in_fence = not in_fence
+            (regions[current] if current else free).append(raw)
+            continue
+        m = re.match(r"^###\s+(.*)$", s) if not in_fence else None
+        if m:
+            current = m.group(1).strip().lower()
+            regions[current] = []
+            continue
+        (regions[current] if current else free).append(raw)
+    return regions, free
+
+
+# ============================================================================
+# Inline Markdown -> LaTeX
+# ============================================================================
+
+_TEX_SPECIALS = {
+    "\\": r"\textbackslash{}", "&": r"\&", "%": r"\%", "$": r"\$",
+    "#": r"\#", "_": r"\_", "{": r"\{", "}": r"\}",
+    "~": r"\textasciitilde{}", "^": r"\textasciicircum{}",
+}
+
+
+def tex_escape(text):
+    return "".join(_TEX_SPECIALS.get(ch, ch) for ch in text)
+
+
+def render_inline(text, ctx):
+    """Inline markdown -> LaTeX. ctx carries the slide dir for image paths."""
+    store = []
+
+    def grab_code(m):
+        store.append(m.group(1))
+        return f"\x00C{len(store)-1}\x00"
+    text = re.sub(r"`([^`]+)`", grab_code, text)
+
+    imgs = []
+
+    def grab_img(m):
+        imgs.append((m.group(1), m.group(2)))
+        return f"\x00I{len(imgs)-1}\x00"
+    text = re.sub(r"!\[([^\]]*)\]\(([^)\s]+)\)", grab_img, text)
+
+    links = []
+
+    def grab_link(m):
+        links.append((m.group(2), m.group(1)))
+        return f"\x00L{len(links)-1}\x00"
+    text = re.sub(r"\[([^\]]+)\]\(([^)\s]+)\)", grab_link, text)
+
+    B0, B1 = "\x01B\x01", "\x01b\x01"
+    E0, E1 = "\x01E\x01", "\x01e\x01"
+    S0, S1 = "\x01S\x01", "\x01s\x01"
+    text = re.sub(r"\*\*([^*]+)\*\*", lambda m: B0 + m.group(1) + B1, text)
+    text = re.sub(r"__([^_]+)__", lambda m: B0 + m.group(1) + B1, text)
+    text = re.sub(r"~~([^~]+)~~", lambda m: S0 + m.group(1) + S1, text)
+    text = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", lambda m: E0 + m.group(1) + E1, text)
+    text = re.sub(r"(?<!_)_([^_\n]+)_(?!_)", lambda m: E0 + m.group(1) + E1, text)
+
+    text = tex_escape(text)
+    text = text.replace(B0, r"\textbf{").replace(B1, "}")
+    text = text.replace(E0, r"\emph{").replace(E1, "}")
+    text = text.replace(S0, r"\sout{").replace(S1, "}")
+
+    def put_link(m):
+        href, label = links[int(m.group(1))]
+        return r"\href{" + href.replace("%", r"\%").replace("#", r"\#") + "}{" + tex_escape(label) + "}"
+    text = re.sub(r"\x00L(\d+)\x00", put_link, text)
+
+    def put_img(m):
+        _, src = imgs[int(m.group(1))]
+        return image_tex(src, ctx)
+    text = re.sub(r"\x00I(\d+)\x00", put_img, text)
+
+    def put_code(m):
+        return r"\texttt{" + tex_escape(store[int(m.group(1))]) + "}"
+    text = re.sub(r"\x00C(\d+)\x00", put_code, text)
+    return text
+
+
+def image_tex(src, ctx, opts=r"max width=\linewidth,max height=0.7\textheight"):
+    """Resolve an image path relative to the slide file and emit includegraphics."""
+    if not (src.startswith("http://") or src.startswith("https://") or os.path.isabs(src)):
+        src = os.path.normpath(os.path.join(ctx.get("dir", "."), src))
+    return r"\includegraphics[" + opts + "]{" + src + "}"
+
+
+# ============================================================================
+# Block Markdown -> LaTeX
+# ============================================================================
+
+def render_blocks(lines, ctx):
+    parts = []
+    i, n = 0, len(lines)
+    while i < n:
+        line = lines[i]
+        s = line.strip()
+        if not s:
+            i += 1
+            continue
+
+        m = re.match(r"^```(\w*)\s*$", s)
+        if m:
+            code = []
+            i += 1
+            while i < n and not lines[i].strip().startswith("```"):
+                code.append(lines[i])
+                i += 1
+            i += 1
+            parts.append("\\begin{lstlisting}\n" + "\n".join(code) + "\n\\end{lstlisting}")
+            continue
+
+        if s.startswith("|") and i + 1 < n and re.match(r"^\s*\|?[\s:|-]+\|?\s*$", lines[i + 1]):
+            tbl = [lines[i], lines[i + 1]]
+            i += 2
+            while i < n and lines[i].strip().startswith("|"):
+                tbl.append(lines[i])
+                i += 1
+            parts.append(render_table(tbl, ctx))
+            continue
+
+        if s.startswith(">"):
+            q = []
+            while i < n and lines[i].strip().startswith(">"):
+                q.append(re.sub(r"^\s*>\s?", "", lines[i]))
+                i += 1
+            parts.append("\\begin{claudequote}\n" + render_blocks(q, ctx) + "\n\\end{claudequote}")
+            continue
+
+        m = re.match(r"^#{4,6}\s+(.*)$", s)  # #### and deeper (### are regions)
+        if m:
+            parts.append(r"\medskip{\color{accent}\large\bfseries " + render_inline(m.group(1), ctx) + r"}\par\medskip")
+            i += 1
+            continue
+
+        if re.match(r"^[-*+]\s+", s):
+            block, i = _consume_list(lines, i, False, ctx)
+            parts.append(block)
+            continue
+        if re.match(r"^\d+\.\s+", s):
+            block, i = _consume_list(lines, i, True, ctx)
+            parts.append(block)
+            continue
+
+        para = []
+        while i < n and lines[i].strip() and not _is_block_start(lines[i]):
+            para.append(lines[i].strip())
+            i += 1
+        parts.append(render_inline(" ".join(para), ctx) + r"\par")
+    return "\n".join(parts)
+
+
+def _is_block_start(line):
+    s = line.strip()
+    return bool(
+        re.match(r"^```", s) or re.match(r"^[-*+]\s+", s) or re.match(r"^\d+\.\s+", s)
+        or s.startswith(">") or re.match(r"^#{4,6}\s+", s) or s.startswith("|")
+    )
+
+
+def _consume_list(lines, i, ordered, ctx):
+    n = len(lines)
+    pat = r"^(\s*)\d+\.\s+(.*)$" if ordered else r"^(\s*)[-*+]\s+(.*)$"
+    items = []
+    base = None
+    while i < n:
+        m = re.match(pat, lines[i])
+        if not m:
+            break
+        indent = len(m.group(1))
+        if base is None:
+            base = indent
+        if indent < base:
+            break
+        items.append(render_inline(m.group(2), ctx))
+        i += 1
+    env = "enumerate" if ordered else "itemize"
+    body = "\n".join(r"\item " + it for it in items)
+    return f"\\begin{{{env}}}\n{body}\n\\end{{{env}}}", i
+
+
+def render_table(rows, ctx):
+    def cells(line):
+        return [c.strip() for c in line.strip().strip("|").split("|")]
+    header = cells(rows[0])
+    body = [cells(r) for r in rows[2:]]
+    ncol = len(header)
+    colspec = " ".join(["l"] * ncol)
+    out = ["\\begin{center}", f"\\begin{{tabular}}{{{colspec}}}", "\\toprule"]
+    out.append(" & ".join(r"\textbf{\color{headingcol}" + render_inline(c, ctx) + "}" for c in header) + r" \\")
+    out.append("\\midrule")
+    for r in body:
+        r = r + [""] * (ncol - len(r))
+        out.append(" & ".join(render_inline(c, ctx) for c in r[:ncol]) + r" \\")
+    out += ["\\bottomrule", "\\end{tabular}", "\\end{center}"]
+    return "\n".join(out)
+
+
+def region(slide, *names):
+    """Return the lines of the first matching region (case-insensitive), or []."""
+    for nm in names:
+        if nm.lower() in slide["regions"]:
+            return slide["regions"][nm.lower()]
+    return []
+
+
+# ============================================================================
+# Layouts -> Beamer frames
+# ============================================================================
+
+def frame_default(slide, ctx):
+    title = _slide_title_tex(slide, ctx)
+    body = render_blocks(slide["body_lines"] + _all_region_lines(slide), ctx)
+    head = "{" + title + "}" if title else "{}"
+    return "\\begin{frame}[fragile]" + head + "\n" + body + "\n\\end{frame}"
+
+
+def frame_two_column(slide, ctx):
+    title = _slide_title_tex(slide, ctx)
+    left = render_blocks(region(slide, "left"), ctx)
+    right = render_blocks(region(slide, "right"), ctx)
+    head = "{" + title + "}" if title else "{}"
+    return (
+        "\\begin{frame}[fragile]" + head + "\n"
+        "\\begin{columns}[T,onlytextwidth]\n"
+        "\\begin{column}{0.48\\textwidth}\n" + left + "\n\\end{column}\n"
+        "\\begin{column}{0.48\\textwidth}\n" + right + "\n\\end{column}\n"
+        "\\end{columns}\n\\end{frame}"
+    )
+
+
+def frame_big_stat(slide, ctx):
+    title = _slide_title_tex(slide, ctx)
+    stat_lines = region(slide, "stat", "number")
+    cap_lines = region(slide, "caption", "label")
+    stat = render_inline(" ".join(l.strip() for l in stat_lines if l.strip()), ctx)
+    caption = render_inline(" ".join(l.strip() for l in cap_lines if l.strip()), ctx)
+    head = "{" + title + "}" if title else "{}"
+    return (
+        "\\begin{frame}[fragile]" + head + "\n"
+        "\\vfill\\begin{center}\n"
+        "{\\color{headingcol}\\fontsize{72}{78}\\selectfont\\bfseries " + stat + "\\par}\n"
+        "\\medskip\n"
+        "{\\color{muted}\\Large " + caption + "\\par}\n"
+        "\\end{center}\\vfill\n\\end{frame}"
+    )
+
+
+def frame_image_side(slide, ctx):
+    title = _slide_title_tex(slide, ctx)
+    img_lines = region(slide, "image")
+    text_lines = region(slide, "text")
+    # Extract the first markdown image from the image region.
+    img_tex = ""
+    for l in img_lines:
+        m = re.search(r"!\[[^\]]*\]\(([^)\s]+)\)", l)
+        if m:
+            img_tex = image_tex(m.group(1), ctx, opts=r"max width=\linewidth,max height=0.75\textheight")
+            break
+    text = render_blocks(text_lines, ctx)
+    side = (slide["frontmatter"].get("image_side") or "left").lower()
+    img_col = ("\\begin{column}{0.46\\textwidth}\\centering\n" + img_tex + "\n\\end{column}\n")
+    txt_col = ("\\begin{column}{0.5\\textwidth}\n" + text + "\n\\end{column}\n")
+    cols = (img_col + txt_col) if side == "left" else (txt_col + img_col)
+    head = "{" + title + "}" if title else "{}"
+    return (
+        "\\begin{frame}[fragile]" + head + "\n"
+        "\\begin{columns}[c,onlytextwidth]\n" + cols + "\\end{columns}\n\\end{frame}"
+    )
+
+
+def frame_dark(slide, ctx, big=True):
+    """title / section / closing: dark full-bleed centered frame.
+
+    Title  = frontmatter `title` OR first #/## heading in the free body.
+    Subtitle = `### Subtitle` region OR frontmatter `subtitle` OR first plain
+               body paragraph that isn't the title/byline.
+    Author = italic-only body line OR frontmatter `author`.
+    Any remaining free body text renders below (e.g. "Questions?").
+    """
+    fm = slide["frontmatter"]
+
+    # --- title ---
+    title = fm.get("title") or _first_heading_text(slide)
+    title_tex = render_inline(str(title), ctx) if title else ""
+
+    # Dark frames flatten all text (free body + every region's content) into one
+    # pool, then classify: skip the title heading, pull an italic-only line as
+    # the byline, treat a `### Subtitle` region (or frontmatter) as subtitle,
+    # and render anything else below.
+    pool = list(slide["body_lines"])
+    sub_region = region(slide, "subtitle")
+    for name, lines in slide["regions"].items():
+        if name == "subtitle":
+            continue
+        pool.extend(lines)
+
+    author = fm.get("author")
+    subtitle = str(fm["subtitle"]) if fm.get("subtitle") else None
+    if sub_region:
+        # a byline may live inside the region; separate it out
+        sub_parts = []
+        for l in sub_region:
+            s = l.strip()
+            if not s:
+                continue
+            m = re.match(r"^\*([^*]+)\*$|^_([^_]+)_$", s)
+            if m and author is None:
+                author = (m.group(1) or m.group(2)).strip()
+            else:
+                sub_parts.append(s)
+        if sub_parts and subtitle is None:
+            subtitle = " ".join(sub_parts)
+
+    leftover = []
+    for raw in pool:
+        s = raw.strip()
+        if not s:
+            continue
+        if re.match(r"^#{1,4}\s+", s):
+            continue  # title heading or region-label injected elsewhere
+        m = re.match(r"^\*([^*]+)\*$|^_([^_]+)_$", s)
+        if m and author is None:
+            author = (m.group(1) or m.group(2)).strip()
+            continue
+        leftover.append(raw)
+
+    if subtitle is None and leftover:
+        subtitle = leftover.pop(0).strip()
+
+    subtitle_tex = render_inline(subtitle, ctx) if subtitle else ""
+    author_tex = render_inline(str(author), ctx) if author else ""
+
+    size = r"\fontsize{40}{46}\selectfont" if big else r"\huge"
+    inner = "\\centering\\vfill\n"
+    if title_tex:
+        inner += "{\\color{darkfg}" + size + "\\bfseries " + title_tex + "\\par}\n\\medskip\n"
+    if subtitle_tex:
+        inner += "{\\color{secondary}\\Large " + subtitle_tex + "\\par}\n\\medskip\n"
+    if author_tex:
+        inner += "{\\color{darkfg}\\normalsize\\itshape " + author_tex + "\\par}\n"
+    if leftover:
+        inner += "{\\color{darkfg}\\large " + render_blocks(leftover, ctx) + "}\n"
+    inner += "\\vfill\n"
+    return (
+        "\\begingroup\n"
+        "\\setbeamercolor{background canvas}{bg=primary}\n"
+        "\\setbeamercolor{normal text}{fg=darkfg}\n"
+        "\\usebeamercolor[fg]{normal text}\n"
+        "\\begin{frame}[fragile,plain]\n" + inner + "\\end{frame}\n"
+        "\\endgroup"
+    )
+
+
+LAYOUTS = {
+    "default": frame_default,
+    "two-column": frame_two_column,
+    "big-stat": frame_big_stat,
+    "image-side": frame_image_side,
+    "title": lambda s, c: frame_dark(s, c, big=True),
+    "section": lambda s, c: frame_dark(s, c, big=True),
+    "closing": lambda s, c: frame_dark(s, c, big=True),
+}
+
+
+def render_slide(slide, ctx):
+    fn = LAYOUTS.get(slide["layout"], frame_default)
+    return fn(slide, ctx)
+
+
+# --- helpers ---------------------------------------------------------------
+
+def _slide_title_tex(slide, ctx):
+    if slide["title"]:
+        return render_inline(str(slide["title"]), ctx)
+    # fall back to a leading `## Title` in free body lines
+    for l in slide["body_lines"]:
+        m = re.match(r"^##\s+(.*)$", l.strip())
+        if m:
+            return render_inline(m.group(1).strip(), ctx)
+    return ""
+
+
+def _first_heading_text(slide):
+    for l in slide["body_lines"]:
+        m = re.match(r"^#{1,3}\s+(.*)$", l.strip())
+        if m:
+            return m.group(1).strip()
+    # or a lone non-empty line
+    for l in slide["body_lines"]:
+        if l.strip():
+            return l.strip()
+    return ""
+
+
+def _all_region_lines(slide):
+    out = []
+    for name, lines in slide["regions"].items():
+        out.append("#### " + name.capitalize())
+        out.extend(lines)
+    return out if slide["regions"] else []
+
+
+# ============================================================================
+# Themes
+# ============================================================================
+
+import json
+
+_FALLBACK_THEME = {
+    "label": "Midnight Executive",
+    "palette": {
+        "primary": "1E2761", "secondary": "CADCFC", "accent": "3D5AF1",
+        "content_bg": "FFFFFF", "content_fg": "1A1A2E", "muted": "5A5A72",
+        "code_bg": "F0F3FB", "table_head_bg": "E4EAFB",
+    },
+    "dark": False,
+    "typography": {"heading_tex": "serif", "body_tex": "sans"},
+}
+
+
+def _themes_path():
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "themes.json")
+
+
+def load_theme(name, theme_file=None):
+    path = theme_file or _themes_path()
+    data = None
+    if os.path.isfile(path):
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    if data and "themes" not in data and "palette" in data:
+        return data
+    if data and "themes" in data:
+        themes = data["themes"]
+        if name in themes:
+            return themes[name]
+        if name is None and themes:
+            return next(iter(themes.values()))
+        if themes:
+            print(f"warning: theme '{name}' not found; using fallback. "
+                  f"Available: {', '.join(themes)}", file=sys.stderr)
+    return _FALLBACK_THEME
+
+
+def _hex_rgb(c):
+    c = c.lstrip("#")
+    return f"{int(c[0:2],16)},{int(c[2:4],16)},{int(c[4:6],16)}"
+
+
+# ============================================================================
+# Document assembly
+# ============================================================================
+
+PREAMBLE = r"""\documentclass[aspectratio=169]{beamer}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\usepackage[export]{adjustbox}
+\usepackage[normalem]{ulem}
+\usepackage{hyperref}
+
+\definecolor{primary}{RGB}{@@PRIMARY@@}
+\definecolor{secondary}{RGB}{@@SECONDARY@@}
+\definecolor{accent}{RGB}{@@ACCENT@@}
+\definecolor{contentbg}{RGB}{@@CONTENTBG@@}
+\definecolor{fg}{RGB}{@@FG@@}
+\definecolor{muted}{RGB}{@@MUTED@@}
+\definecolor{codebg}{RGB}{@@CODEBG@@}
+\definecolor{tablehead}{RGB}{@@TABLEHEAD@@}
+\definecolor{darkfg}{RGB}{@@DARKFG@@}
+\definecolor{headingcol}{RGB}{@@HEADINGCOL@@}
+
+\setbeamercolor{background canvas}{bg=contentbg}
+\setbeamercolor{normal text}{fg=fg}
+\setbeamercolor{frametitle}{fg=headingcol,bg=}
+\setbeamercolor{itemize item}{fg=accent}
+\setbeamercolor{itemize subitem}{fg=accent}
+\setbeamercolor{enumerate item}{fg=accent}
+\setbeamerfont{frametitle}{series=\bfseries,size=\LARGE}
+\setbeamertemplate{navigation symbols}{}
+\usefonttheme{@@FONTTHEME@@}
+
+% Frame title: NO underline rule (an AI-generated-slide tell). Whitespace only.
+\setbeamertemplate{frametitle}{%
+  \vskip0.8em\hspace{0.1em}\insertframetitle\par\vskip0.5em}
+
+% Blockquote: subtle tinted box, NOT a left accent stripe.
+\newtcolorbox{claudequote}{
+  colback=codebg, colframe=codebg, boxrule=0pt, arc=2mm,
+  left=3mm,right=3mm,top=2mm,bottom=2mm,
+  fontupper=\itshape\color{muted}}
+
+\lstset{
+  basicstyle=\ttfamily\small, backgroundcolor=\color{codebg},
+  frame=none, breaklines=true, columns=fullflexible, keepspaces=true,
+  xleftmargin=0.6em, aboveskip=0.8em, belowskip=0.8em}
+
+\hypersetup{colorlinks=true,urlcolor=accent,linkcolor=accent}
+"""
+
+
+def build_document(deck_cfg, slides, theme):
+    pal = theme["palette"]
+    dark = theme.get("dark", False)
+    typ = theme.get("typography", {})
+
+    dark_fg = "FFFFFF" if not dark else pal["content_fg"]
+    heading_hex = pal["accent"] if dark else pal["primary"]
+    fonttheme = "serif" if typ.get("heading_tex", "serif") == "serif" else "professionalfonts"
+
+    preamble = PREAMBLE
+    for k, v in (
+        ("@@PRIMARY@@", _hex_rgb(pal["primary"])),
+        ("@@SECONDARY@@", _hex_rgb(pal["secondary"])),
+        ("@@ACCENT@@", _hex_rgb(pal["accent"])),
+        ("@@CONTENTBG@@", _hex_rgb(pal["content_bg"])),
+        ("@@FG@@", _hex_rgb(pal["content_fg"])),
+        ("@@MUTED@@", _hex_rgb(pal["muted"])),
+        ("@@CODEBG@@", _hex_rgb(pal["code_bg"])),
+        ("@@TABLEHEAD@@", _hex_rgb(pal["table_head_bg"])),
+        ("@@DARKFG@@", _hex_rgb(dark_fg)),
+        ("@@HEADINGCOL@@", _hex_rgb(heading_hex)),
+        ("@@FONTTHEME@@", fonttheme),
+    ):
+        preamble = preamble.replace(k, v)
+
+    frames = "\n\n".join(render_slide(s, {"dir": s["dir"]}) for s in slides)
+    return preamble + "\n\\begin{document}\n" + frames + "\n\\end{document}\n"
+
+
+# ============================================================================
+# Compile
+# ============================================================================
+
+def compile_pdf(tex_path, keep_tex=False):
+    workdir = os.path.dirname(os.path.abspath(tex_path)) or "."
+    base = os.path.splitext(os.path.basename(tex_path))[0]
+    if not _has_pdflatex():
+        print("error: pdflatex not found. Install a LaTeX toolchain (e.g. TeX Live / MacTeX)\n"
+              "with beamer, booktabs, listings, tcolorbox, adjustbox, ulem.", file=sys.stderr)
+        return None
+    proc = subprocess.run(
+        ["pdflatex", "-interaction=nonstopmode", "-halt-on-error",
+         os.path.basename(tex_path)],
+        cwd=workdir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+    )
+    pdf_path = os.path.join(workdir, base + ".pdf")
+    if proc.returncode != 0 or not os.path.isfile(pdf_path):
+        log = proc.stdout.decode("utf-8", "replace")
+        tail = "\n".join(log.splitlines()[-25:])
+        print("error: pdflatex failed. Last lines:\n" + tail, file=sys.stderr)
+        return None
+    # clean aux files
+    for ext in (".aux", ".log", ".nav", ".snm", ".toc", ".out"):
+        f = os.path.join(workdir, base + ext)
+        if os.path.isfile(f):
+            os.remove(f)
+    if not keep_tex and os.path.isfile(tex_path):
+        os.remove(tex_path)
+    return pdf_path
+
+
+def _has_pdflatex():
+    from shutil import which
+    return which("pdflatex") is not None
+
+
+# ============================================================================
+# CLI
+# ============================================================================
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(
+        description="Compose a slide deck from a manifest + per-slide markdown files -> PDF.")
+    ap.add_argument("manifest", nargs="?", help="Deck manifest markdown file")
+    ap.add_argument("-o", "--output", help="Output PDF path (default: alongside manifest)")
+    ap.add_argument("--theme", help="Theme preset (overrides manifest); default from manifest or midnight-executive")
+    ap.add_argument("--theme-file", help="Custom theme JSON (overrides bundled presets)")
+    ap.add_argument("--list-themes", action="store_true", help="List theme presets and exit")
+    ap.add_argument("--title", help="Override deck title")
+    ap.add_argument("--keep-tex", action="store_true", help="Keep the generated .tex file")
+    args = ap.parse_args(argv)
+
+    if args.list_themes:
+        path = args.theme_file or _themes_path()
+        if os.path.isfile(path):
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            print("Available themes:")
+            for name, th in data.get("themes", {}).items():
+                dk = " (dark)" if th.get("dark") else ""
+                print(f"  {name:20s} {th.get('label','')}{dk}")
+        return 0
+
+    if not args.manifest:
+        ap.error("a manifest file is required")
+    if not os.path.isfile(args.manifest):
+        print(f"error: no such file: {args.manifest}", file=sys.stderr)
+        return 1
+
+    deck_cfg, slide_paths = parse_manifest(args.manifest)
+    if args.title:
+        deck_cfg["title"] = args.title
+
+    if not slide_paths:
+        print("error: manifest lists no slide files.", file=sys.stderr)
+        return 1
+
+    missing = [p for p in slide_paths if not os.path.isfile(p)]
+    if missing:
+        print("error: slide file(s) not found:\n  " + "\n  ".join(missing), file=sys.stderr)
+        return 1
+
+    slides = [parse_slide_file(p) for p in slide_paths]
+
+    theme_name = args.theme or deck_cfg.get("theme") or "midnight-executive"
+    theme = load_theme(theme_name, args.theme_file)
+
+    doc = build_document(deck_cfg, slides, theme)
+
+    out_pdf = args.output or (os.path.splitext(args.manifest)[0] + ".pdf")
+    tex_path = os.path.splitext(out_pdf)[0] + ".tex"
+    with open(tex_path, "w", encoding="utf-8") as f:
+        f.write(doc)
+
+    pdf = compile_pdf(tex_path, keep_tex=args.keep_tex)
+    if not pdf:
+        print(f"(kept {tex_path} for inspection)", file=sys.stderr)
+        return 1
+    print(f"Wrote {len(slides)} slide(s) [{theme.get('label','')}] -> {pdf}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
