@@ -69,6 +69,23 @@
         "heading_tex": "serif"
       }
     },
+    "usf-bulls": {
+      "label": "USF Bulls",
+      "palette": {
+        "primary": "006747",
+        "secondary": "CFC393",
+        "accent": "9CCB3B",
+        "content_bg": "FFFFFF",
+        "content_fg": "1A231F",
+        "muted": "455F69",
+        "code_bg": "EDEBD1",
+        "table_head_bg": "E1E9DF"
+      },
+      "dark": false,
+      "typography": {
+        "heading_tex": "sans"
+      }
+    },
     "premium-dark": {
       "label": "Premium Dark",
       "palette": {

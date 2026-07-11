@@ -540,9 +540,25 @@ LAYOUTS = {
 }
 
 
+def _wants_logo(slide):
+    """Per-slide toggle: frontmatter `footer_logo` (alias `logo`), truthy."""
+    fm = slide["frontmatter"]
+    val = fm.get("footer_logo", fm.get("logo"))
+    if isinstance(val, str):
+        return val.strip().lower() in ("true", "yes", "on", "1")
+    return bool(val)
+
+
 def render_slide(slide, ctx):
     fn = LAYOUTS.get(slide["layout"], frame_default)
-    return fn(slide, ctx)
+    tex = fn(slide, ctx)
+    if _wants_logo(slide):
+        # Inject the logo overlay just before the LAST \end{frame} so it lands
+        # inside the frame (dark layouts wrap the frame in a begingroup).
+        idx = tex.rfind("\\end{frame}")
+        if idx != -1:
+            tex = tex[:idx] + "\\usflogo\n" + tex[idx:]
+    return tex
 
 
 # --- helpers ---------------------------------------------------------------
@@ -639,6 +655,7 @@ PREAMBLE = r"""\documentclass[aspectratio=169]{beamer}
 \usepackage{tcolorbox}
 \usepackage[export]{adjustbox}
 \usepackage[normalem]{ulem}
+\usepackage{tikz}
 \usepackage{hyperref}
 
 \definecolor{primary}{RGB}{@@PRIMARY@@}
@@ -678,10 +695,22 @@ PREAMBLE = r"""\documentclass[aspectratio=169]{beamer}
   xleftmargin=0.6em, aboveskip=0.8em, belowskip=0.8em}
 
 \hypersetup{colorlinks=true,urlcolor=accent,linkcolor=accent}
+
+% Per-slide USF logo footer. Anchored to the bottom-right corner via an absolute
+% tikz overlay. Uses the official USF logo as a PDF vector (@@LOGOPATH@@,
+% extracted from the source deck) so its transparent background composites
+% cleanly on any slide.
+\newcommand{\usflogo}{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \node[anchor=south east,inner sep=0pt]
+      at ([shift={(-1.4em,1.0em)}]current page.south east)
+      {\includegraphics[height=2.4em]{@@LOGOPATH@@}};
+  \end{tikzpicture}%
+}
 """
 
 
-def build_document(deck_cfg, slides, theme):
+def build_document(deck_cfg, slides, theme, manifest_dir="."):
     pal = theme["palette"]
     dark = theme.get("dark", False)
     typ = theme.get("typography", {})
@@ -689,6 +718,13 @@ def build_document(deck_cfg, slides, theme):
     dark_fg = "FFFFFF" if not dark else pal["content_fg"]
     heading_hex = pal["accent"] if dark else pal["primary"]
     fonttheme = "serif" if typ.get("heading_tex", "serif") == "serif" else "professionalfonts"
+
+    # Footer logo image. Manifest `logo:` overrides; default is usf-logo.png
+    # bundled next to this script. Resolved to an absolute path for LaTeX.
+    logo_ref = deck_cfg.get("logo") or os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "deck", "usf-logo.pdf")
+    if not os.path.isabs(logo_ref):
+        logo_ref = os.path.normpath(os.path.join(manifest_dir, logo_ref))
 
     preamble = PREAMBLE
     for k, v in (
@@ -703,6 +739,7 @@ def build_document(deck_cfg, slides, theme):
         ("@@DARKFG@@", _hex_rgb(dark_fg)),
         ("@@HEADINGCOL@@", _hex_rgb(heading_hex)),
         ("@@FONTTHEME@@", fonttheme),
+        ("@@LOGOPATH@@", logo_ref),
     ):
         preamble = preamble.replace(k, v)
 
@@ -721,11 +758,16 @@ def compile_pdf(tex_path, keep_tex=False):
         print("error: pdflatex not found. Install a LaTeX toolchain (e.g. TeX Live / MacTeX)\n"
               "with beamer, booktabs, listings, tcolorbox, adjustbox, ulem.", file=sys.stderr)
         return None
-    proc = subprocess.run(
-        ["pdflatex", "-interaction=nonstopmode", "-halt-on-error",
-         os.path.basename(tex_path)],
-        cwd=workdir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-    )
+    # Two passes: tikz 'remember picture' overlays (per-slide logo) need the
+    # second pass to resolve absolute page coordinates.
+    for _ in range(2):
+        proc = subprocess.run(
+            ["pdflatex", "-interaction=nonstopmode", "-halt-on-error",
+             os.path.basename(tex_path)],
+            cwd=workdir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        )
+        if proc.returncode != 0:
+            break
     pdf_path = os.path.join(workdir, base + ".pdf")
     if proc.returncode != 0 or not os.path.isfile(pdf_path):
         log = proc.stdout.decode("utf-8", "replace")
@@ -798,7 +840,8 @@ def main(argv=None):
     theme_name = args.theme or deck_cfg.get("theme") or "midnight-executive"
     theme = load_theme(theme_name, args.theme_file)
 
-    doc = build_document(deck_cfg, slides, theme)
+    manifest_dir = os.path.dirname(os.path.abspath(args.manifest))
+    doc = build_document(deck_cfg, slides, theme, manifest_dir)
 
     out_pdf = args.output or (os.path.splitext(args.manifest)[0] + ".pdf")
     tex_path = os.path.splitext(out_pdf)[0] + ".tex"

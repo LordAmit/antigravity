@@ -68,6 +68,28 @@ title: Two column layout
 Images use standard markdown `![alt](path)` and resolve **relative to the slide
 file**.
 
+## Per-slide USF logo footer
+
+Add `footer_logo: true` (alias `logo: true`) to a slide's frontmatter to stamp
+the official USF logo in the bottom-right corner of *that* slide. The image is
+`deck/usf-logo.pdf` (the bull + "UNIVERSITY of SOUTH FLORIDA" wordmark extracted
+from the source USF deck as a PDF vector, so its transparency composites cleanly
+on any background). On dark layouts (`title`/`section`/`closing`) it sits on a
+rounded white chip so the green wordmark stays legible.
+
+```markdown
+---
+layout: default
+title: Program overview
+footer_logo: true
+---
+```
+
+The toggle is per-slide, so only the slides that opt in show the footer. Point
+it at a different image with a manifest-level `logo:` path (resolved relative to
+the manifest); otherwise the bundled `usf-logo.png` is used. Pairs naturally
+with the `usf-bulls` theme.
+
 ## Layouts
 
 | `layout:`     | Regions used            | Look |

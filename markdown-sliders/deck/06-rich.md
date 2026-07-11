@@ -1,5 +1,6 @@
 ---
 title: Rich content works
+footer_logo: true
 ---
 > Good slides are mostly whitespace and one clear idea.
 
