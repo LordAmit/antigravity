@@ -100,7 +100,7 @@ with the `usf-bulls` theme.
 | `closing`     | (heading + body)        | Dark full-bleed closing slide |
 | `two-column`  | `### Left` / `### Right`| Two independent columns |
 | `big-stat`    | `### Stat` / `### Caption` | Huge number over a caption |
-| `image-side`  | `### Image` / `### Text`| Image beside text (`image_side: left|right`) |
+| `image-side`  | body = side text        | Image (frontmatter `image:`) beside text (`image_side: left|right`; optional `scale:`, `caption:`/`credit:` below the image) |
 
 `default`, `title`, `section`, `closing` don't require regions. The dark
 layouts (`title`/`section`/`closing`) form the guideline "sandwich".
