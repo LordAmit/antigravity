@@ -11,7 +11,7 @@ typography) is data-driven via `themes.json`.
 - Python 3 with **PyYAML** (`pip install pyyaml`) — a stdlib fallback parser is
   used if PyYAML is absent, but PyYAML is recommended.
 - A **LaTeX toolchain** with `pdflatex` and the packages: `beamer`, `booktabs`,
-  `listings`, `tcolorbox`, `adjustbox`, `ulem`, `hyperref`.
+  `listings`, `tcolorbox`, `adjustbox`, `ulem`, `tikz`, `csquotes`, `hyperref`.
   (TeX Live: `texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended`.)
 
 ## Run
@@ -95,11 +95,11 @@ with the `usf-bulls` theme.
 | `layout:`     | Regions used            | Look |
 |---------------|-------------------------|------|
 | `default`     | (none; plain body)      | Frame title + markdown body |
-| `title`       | `### Subtitle` + `*byline*` | Dark full-bleed opening slide |
-| `section`     | (heading only)          | Dark full-bleed divider |
-| `closing`     | (heading + body)        | Dark full-bleed closing slide |
+| `title`       | frontmatter `title:`/`subtitle:`/`subsubtitle:` | Dark full-bleed opening slide |
+| `section`     | frontmatter `title:`    | Dark full-bleed divider |
+| `closing`     | frontmatter `title:`/`subtitle:` | Dark full-bleed closing slide |
 | `two-column`  | `### Left` / `### Right`| Two independent columns |
-| `big-stat`    | `### Stat` / `### Caption` | Huge number over a caption |
+| `big-stat`    | frontmatter `stat:` / `caption:` | Huge number over a caption |
 | `image-side`  | body = side text        | Image (frontmatter `image:`) beside text (`image_side: left|right`; optional `scale:`, `caption:`/`credit:` below the image) |
 
 `default`, `title`, `section`, `closing` don't require regions. The dark
@@ -122,6 +122,10 @@ Paragraphs, bullet/numbered lists, **bold**/*italic*/~~strike~~, `inline code`,
 fenced code blocks, links, images, blockquotes (rendered as a tinted box, not a
 stripe), pipe tables, and `####`+ sub-headings (note: `###` is reserved for
 region markers).
+
+Straight quotes are curled automatically — `"double"` and `'single'` become
+proper typographic quotes, apostrophes are preserved, and quotes inside code
+(inline or fenced) stay straight.
 
 ## Example
 
