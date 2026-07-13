@@ -228,6 +228,8 @@ def render_inline(text, ctx):
     B0, B1 = "\x01B\x01", "\x01b\x01"
     E0, E1 = "\x01E\x01", "\x01e\x01"
     S0, S1 = "\x01S\x01", "\x01s\x01"
+    U0, U1 = "\x01U\x01", "\x01u\x01"
+    text = re.sub(r"<u>(.+?)</u>", lambda m: U0 + m.group(1) + U1, text, flags=re.S)
     text = re.sub(r"\*\*([^*]+)\*\*", lambda m: B0 + m.group(1) + B1, text)
     text = re.sub(r"__([^_]+)__", lambda m: B0 + m.group(1) + B1, text)
     text = re.sub(r"~~([^~]+)~~", lambda m: S0 + m.group(1) + S1, text)
@@ -238,6 +240,7 @@ def render_inline(text, ctx):
     text = text.replace(B0, r"\textbf{").replace(B1, "}")
     text = text.replace(E0, r"\emph{").replace(E1, "}")
     text = text.replace(S0, r"\sout{").replace(S1, "}")
+    text = text.replace(U0, r"\uline{").replace(U1, "}")
 
     def put_link(m):
         href, label = links[int(m.group(1))]
@@ -424,19 +427,43 @@ def frame_big_stat(slide, ctx):
 
 
 def frame_image_side(slide, ctx):
+    fm = slide["frontmatter"]
     title = _slide_title_tex(slide, ctx)
-    img_lines = region(slide, "image")
-    text_lines = region(slide, "text")
-    # Extract the first markdown image from the image region.
-    img_tex = ""
-    for l in img_lines:
-        m = re.search(r"!\[[^\]]*\]\(([^)\s]+)\)", l)
-        if m:
-            img_tex = image_tex(m.group(1), ctx, opts=r"max width=\linewidth,max height=0.75\textheight")
-            break
+    opts = r"max width=\linewidth,max height=0.75\textheight"
+
+    # Image source comes from the `image:` frontmatter key. Fall back to the
+    # first markdown image in a `### Image` region (legacy region form).
+    src = fm.get("image")
+    if not src:
+        for l in region(slide, "image"):
+            m = re.search(r"!\[[^\]]*\]\(([^)\s]+)\)", l)
+            if m:
+                src = m.group(1)
+                break
+    img_tex = image_tex(src, ctx, opts=opts) if src else ""
+
+    # Optional `scale:` shrinks/grows the fitted image (e.g. scale: .9 -> 90%).
+    if img_tex and fm.get("scale") is not None:
+        try:
+            img_tex = "\\scalebox{" + repr(float(fm["scale"])) + "}{" + img_tex + "}"
+        except (TypeError, ValueError):
+            pass
+
+    # Side text is the plain body; fall back to a `### Text` region (legacy).
+    text_lines = slide["body_lines"] or region(slide, "text")
     text = render_blocks(text_lines, ctx)
-    side = (slide["frontmatter"].get("image_side") or "left").lower()
-    img_col = ("\\begin{column}{0.46\\textwidth}\\centering\n" + img_tex + "\n\\end{column}\n")
+    side = (fm.get("image_side") or "left").lower()
+
+    # Optional caption (small, italic) and credit (smaller) centered below the
+    # image, both muted. Caption sits above the credit.
+    below = ""
+    if fm.get("caption"):
+        below += ("\n\\par\\smallskip\n{\\color{muted}\\small\\itshape "
+                  + render_inline(str(fm["caption"]), ctx) + "\\par}")
+    if fm.get("credit"):
+        below += ("\n\\par\\smallskip\n{\\color{muted}\\footnotesize "
+                  + render_inline(str(fm["credit"]), ctx) + "\\par}")
+    img_col = ("\\begin{column}{0.46\\textwidth}\\centering\n" + img_tex + below + "\n\\end{column}\n")
     txt_col = ("\\begin{column}{0.5\\textwidth}\n" + text + "\n\\end{column}\n")
     cols = (img_col + txt_col) if side == "left" else (txt_col + img_col)
     head = "{" + title + "}" if title else "{}"
@@ -605,7 +632,7 @@ _FALLBACK_THEME = {
     "palette": {
         "primary": "1E2761", "secondary": "CADCFC", "accent": "3D5AF1",
         "content_bg": "FFFFFF", "content_fg": "1A1A2E", "muted": "5A5A72",
-        "code_bg": "F0F3FB", "table_head_bg": "E4EAFB",
+        "code_bg": "F0F3FB",
     },
     "dark": False,
     "typography": {"heading_tex": "serif"},
@@ -662,19 +689,24 @@ PREAMBLE = r"""\documentclass[aspectratio=169]{beamer}
 \definecolor{secondary}{RGB}{@@SECONDARY@@}
 \definecolor{accent}{RGB}{@@ACCENT@@}
 \definecolor{contentbg}{RGB}{@@CONTENTBG@@}
-\definecolor{fg}{RGB}{@@FG@@}
+\definecolor{bodyfg}{RGB}{@@FG@@}
 \definecolor{muted}{RGB}{@@MUTED@@}
 \definecolor{codebg}{RGB}{@@CODEBG@@}
-\definecolor{tablehead}{RGB}{@@TABLEHEAD@@}
 \definecolor{darkfg}{RGB}{@@DARKFG@@}
 \definecolor{headingcol}{RGB}{@@HEADINGCOL@@}
 
 \setbeamercolor{background canvas}{bg=contentbg}
-\setbeamercolor{normal text}{fg=fg}
+\setbeamercolor{normal text}{fg=bodyfg}
+% Beamer derives body text and list markers from 'structure' (default blue).
+% Pin it to the content foreground so ALL text — paragraphs and bullet/number
+% markers alike — uses normal text color. Only the frame title is recolored.
+\setbeamercolor{structure}{fg=bodyfg}
 \setbeamercolor{frametitle}{fg=headingcol,bg=}
-\setbeamercolor{itemize item}{fg=accent}
-\setbeamercolor{itemize subitem}{fg=accent}
-\setbeamercolor{enumerate item}{fg=accent}
+\setbeamercolor{itemize item}{fg=bodyfg}
+\setbeamercolor{itemize subitem}{fg=bodyfg}
+\setbeamercolor{itemize subsubitem}{fg=bodyfg}
+\setbeamercolor{enumerate item}{fg=bodyfg}
+\setbeamercolor{enumerate subitem}{fg=bodyfg}
 \setbeamerfont{frametitle}{series=\bfseries,size=\LARGE}
 \setbeamertemplate{navigation symbols}{}
 \usefonttheme{@@FONTTHEME@@}
@@ -735,7 +767,6 @@ def build_document(deck_cfg, slides, theme, manifest_dir="."):
         ("@@FG@@", _hex_rgb(pal["content_fg"])),
         ("@@MUTED@@", _hex_rgb(pal["muted"])),
         ("@@CODEBG@@", _hex_rgb(pal["code_bg"])),
-        ("@@TABLEHEAD@@", _hex_rgb(pal["table_head_bg"])),
         ("@@DARKFG@@", _hex_rgb(dark_fg)),
         ("@@HEADINGCOL@@", _hex_rgb(heading_hex)),
         ("@@FONTTHEME@@", fonttheme),
