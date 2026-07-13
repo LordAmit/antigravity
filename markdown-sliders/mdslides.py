@@ -225,6 +225,13 @@ def render_inline(text, ctx):
         return f"\x00L{len(links)-1}\x00"
     text = re.sub(r"\[([^\]]+)\]\(([^)\s]+)\)", grab_link, text)
 
+    # Smart single quotes: csquotes fixes straight double quotes, but can't
+    # disambiguate a single "'" (opening quote vs. apostrophe). Turn an *opening*
+    # single quote (at a word boundary, before non-space) into a backtick so
+    # LaTeX curls it correctly; closing quotes and apostrophes stay "'" (already
+    # rendered as a right single quote). Inline code/links are already extracted.
+    text = re.sub(r"(^|(?<=[\s(\[{]))'(?=\S)", "`", text)
+
     B0, B1 = "\x01B\x01", "\x01b\x01"
     E0, E1 = "\x01E\x01", "\x01e\x01"
     S0, S1 = "\x01S\x01", "\x01s\x01"
@@ -410,11 +417,16 @@ def frame_two_column(slide, ctx):
 
 
 def frame_big_stat(slide, ctx):
+    fm = slide["frontmatter"]
     title = _slide_title_tex(slide, ctx)
-    stat_lines = region(slide, "stat", "number")
-    cap_lines = region(slide, "caption", "label")
-    stat = render_inline(" ".join(l.strip() for l in stat_lines if l.strip()), ctx)
-    caption = render_inline(" ".join(l.strip() for l in cap_lines if l.strip()), ctx)
+    # Stat + caption come from frontmatter; fall back to `### Stat`/`### Caption`
+    # regions (legacy region form).
+    stat_src = fm.get("stat") or " ".join(
+        l.strip() for l in region(slide, "stat", "number") if l.strip())
+    cap_src = fm.get("caption") or " ".join(
+        l.strip() for l in region(slide, "caption", "label") if l.strip())
+    stat = render_inline(str(stat_src), ctx)
+    caption = render_inline(str(cap_src), ctx)
     head = "{" + title + "}" if title else "{}"
     return (
         "\\begin{frame}[fragile]" + head + "\n"
@@ -479,7 +491,8 @@ def frame_dark(slide, ctx, big=True):
     Title  = frontmatter `title` OR first #/## heading in the free body.
     Subtitle = `### Subtitle` region OR frontmatter `subtitle` OR first plain
                body paragraph that isn't the title/byline.
-    Author = italic-only body line OR frontmatter `author`.
+    Subsubtitle = frontmatter `subsubtitle` (alias `author`) OR an italic-only
+               body line.
     Any remaining free body text renders below (e.g. "Questions?").
     """
     fm = slide["frontmatter"]
@@ -499,7 +512,7 @@ def frame_dark(slide, ctx, big=True):
             continue
         pool.extend(lines)
 
-    author = fm.get("author")
+    subsubtitle = fm.get("subsubtitle") or fm.get("author")
     subtitle = str(fm["subtitle"]) if fm.get("subtitle") else None
     if sub_region:
         # a byline may live inside the region; separate it out
@@ -509,8 +522,8 @@ def frame_dark(slide, ctx, big=True):
             if not s:
                 continue
             m = re.match(r"^\*([^*]+)\*$|^_([^_]+)_$", s)
-            if m and author is None:
-                author = (m.group(1) or m.group(2)).strip()
+            if m and subsubtitle is None:
+                subsubtitle = (m.group(1) or m.group(2)).strip()
             else:
                 sub_parts.append(s)
         if sub_parts and subtitle is None:
@@ -524,8 +537,8 @@ def frame_dark(slide, ctx, big=True):
         if re.match(r"^#{1,4}\s+", s):
             continue  # title heading or region-label injected elsewhere
         m = re.match(r"^\*([^*]+)\*$|^_([^_]+)_$", s)
-        if m and author is None:
-            author = (m.group(1) or m.group(2)).strip()
+        if m and subsubtitle is None:
+            subsubtitle = (m.group(1) or m.group(2)).strip()
             continue
         leftover.append(raw)
 
@@ -533,7 +546,7 @@ def frame_dark(slide, ctx, big=True):
         subtitle = leftover.pop(0).strip()
 
     subtitle_tex = render_inline(subtitle, ctx) if subtitle else ""
-    author_tex = render_inline(str(author), ctx) if author else ""
+    subsubtitle_tex = render_inline(str(subsubtitle), ctx) if subsubtitle else ""
 
     size = r"\fontsize{40}{46}\selectfont" if big else r"\huge"
     inner = "\\centering\\vfill\n"
@@ -541,8 +554,8 @@ def frame_dark(slide, ctx, big=True):
         inner += "{\\color{darkfg}" + size + "\\bfseries " + title_tex + "\\par}\n\\medskip\n"
     if subtitle_tex:
         inner += "{\\color{secondary}\\Large " + subtitle_tex + "\\par}\n\\medskip\n"
-    if author_tex:
-        inner += "{\\color{darkfg}\\normalsize\\itshape " + author_tex + "\\par}\n"
+    if subsubtitle_tex:
+        inner += "{\\color{darkfg}\\normalsize\\itshape " + subsubtitle_tex + "\\par}\n"
     if leftover:
         inner += "{\\color{darkfg}\\large " + render_blocks(leftover, ctx) + "}\n"
     inner += "\\vfill\n"
@@ -683,6 +696,8 @@ PREAMBLE = r"""\documentclass[aspectratio=169]{beamer}
 \usepackage[export]{adjustbox}
 \usepackage[normalem]{ulem}
 \usepackage{tikz}
+\usepackage[autostyle=true]{csquotes}
+\MakeOuterQuote{"}
 \usepackage{hyperref}
 
 \definecolor{primary}{RGB}{@@PRIMARY@@}

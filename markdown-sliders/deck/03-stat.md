@@ -1,9 +1,6 @@
 ---
 layout: big-stat
 title: Big stat callout
+stat: 98%
+caption: of slides rendered without manual layout tweaks
 ---
-### Stat
-98%
-
-### Caption
-of slides rendered without manual layout tweaks

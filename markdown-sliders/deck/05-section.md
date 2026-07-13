@@ -1,4 +1,4 @@
 ---
 layout: section
+title: "Part Two: Details"
 ---
-# Part Two: Details

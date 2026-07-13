@@ -1,6 +1,5 @@
 ---
 layout: closing
+title: Thank you
+subtitle: Questions?
 ---
-# Thank you
-
-Questions?

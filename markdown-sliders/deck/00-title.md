@@ -1,10 +1,6 @@
 ---
 layout: title
+title: Building Better Slides
+subtitle: A manifest-driven, layout-aware deck compiler
+subsubtitle: Amit — July 2026
 ---
-# Building Better Slides
-
-### Subtitle
-
-A manifest-driven, layout-aware deck compiler
-
-*Amit — July 2026*
