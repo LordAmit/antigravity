@@ -1,6 +1,8 @@
 \centering\vfill
-{\color{darkfg}\fontsize{40}{46}\selectfont\bfseries Thank you\par}
+{\color{darkfg}\fontsize{28}{34}\selectfont\bfseries Thank you\par}
 \medskip
+{\color{darkfg}\rule{0.22\textwidth}{0.4pt}}\par
+\bigskip
 {\color{secondary}\Large Questions?\par}
 \medskip
 \vfill

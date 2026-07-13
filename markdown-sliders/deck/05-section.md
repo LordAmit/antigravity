@@ -1,4 +1,5 @@
 ---
 layout: section
-title: "Part Two: Details"
+kicker: Part Two
+title: Details
 ---

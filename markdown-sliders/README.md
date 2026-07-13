@@ -96,9 +96,9 @@ with the `usf-bulls` theme.
 | `layout:`     | Regions used            | Look |
 |---------------|-------------------------|------|
 | `default`     | (none; plain body)      | Frame title + markdown body |
-| `title`       | frontmatter `title:`/`subtitle:`/`subsubtitle:` | Dark full-bleed opening slide |
-| `section`     | frontmatter `title:`    | Dark full-bleed divider |
-| `closing`     | frontmatter `title:`/`subtitle:` | Dark full-bleed closing slide |
+| `title`       | frontmatter `title:`/`subtitle:`/`subsubtitle:` | Dark opening slide; biggest title + rule |
+| `section`     | frontmatter `kicker:`/`title:` | Dark divider; medium title + kicker eyebrow |
+| `closing`     | frontmatter `title:`/`subtitle:` | Dark closing slide; smallest title + rule |
 | `two-column`  | `### Left` / `### Right`| Two independent columns |
 | `big-stat`    | frontmatter `stat:` / `caption:` | Huge number over a caption |
 | `image-side`  | body = side text        | Image (frontmatter `image:`) beside text (`image_side: left|right`; optional `scale:`, `caption:`/`credit:` below the image) |

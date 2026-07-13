@@ -504,8 +504,13 @@ def frame_image_side(slide, ctx):
     )
 
 
-def frame_dark(slide, ctx, big=True):
+def frame_dark(slide, ctx, kind="title"):
     """title / section / closing: dark full-bleed centered frame.
+
+    All three are centered on the dark background and share the same content
+    model, but differ by title size (title > section > closing) and a couple of
+    accents: every one draws a short horizontal rule under its title (with a gap
+    after), and `section` may carry an optional `kicker:` eyebrow above the title.
 
     Title  = frontmatter `title` OR first #/## heading in the free body.
     Subtitle = `### Subtitle` region OR frontmatter `subtitle` OR first plain
@@ -567,10 +572,25 @@ def frame_dark(slide, ctx, big=True):
     subtitle_tex = render_inline(subtitle, ctx) if subtitle else ""
     subsubtitle_tex = render_inline(str(subsubtitle), ctx) if subsubtitle else ""
 
-    size = r"\fontsize{40}{46}\selectfont" if big else r"\huge"
+    # Size hierarchy: title (biggest) > section > closing.
+    sizes = {
+        "title": r"\fontsize{40}{46}\selectfont",
+        "section": r"\fontsize{34}{40}\selectfont",
+        "closing": r"\fontsize{28}{34}\selectfont",
+    }
+    size = sizes.get(kind, sizes["title"])
+
+    # Optional eyebrow above a section title.
+    kicker = fm.get("kicker") if kind == "section" else None
+    kicker_tex = render_inline(str(kicker), ctx) if kicker else ""
+
     inner = "\\centering\\vfill\n"
+    if kicker_tex:
+        inner += "{\\color{muted}\\footnotesize\\MakeUppercase{" + kicker_tex + "}\\par}\n\\smallskip\n"
     if title_tex:
         inner += "{\\color{darkfg}" + size + "\\bfseries " + title_tex + "\\par}\n\\medskip\n"
+        # Short rule under the title, then a gap (all three layouts).
+        inner += "{\\color{darkfg}\\rule{0.22\\textwidth}{0.4pt}}\\par\n\\bigskip\n"
     if subtitle_tex:
         inner += "{\\color{secondary}\\Large " + subtitle_tex + "\\par}\n\\medskip\n"
     if subsubtitle_tex:
@@ -593,9 +613,9 @@ LAYOUTS = {
     "two-column": frame_two_column,
     "big-stat": frame_big_stat,
     "image-side": frame_image_side,
-    "title": lambda s, c: frame_dark(s, c, big=True),
-    "section": lambda s, c: frame_dark(s, c, big=True),
-    "closing": lambda s, c: frame_dark(s, c, big=True),
+    "title": lambda s, c: frame_dark(s, c, kind="title"),
+    "section": lambda s, c: frame_dark(s, c, kind="section"),
+    "closing": lambda s, c: frame_dark(s, c, kind="closing"),
 }
 
 
