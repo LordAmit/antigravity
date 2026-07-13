@@ -11,7 +11,8 @@ typography) is data-driven via `themes.json`.
 - Python 3 with **PyYAML** (`pip install pyyaml`) — a stdlib fallback parser is
   used if PyYAML is absent, but PyYAML is recommended.
 - A **LaTeX toolchain** with `pdflatex` and the packages: `beamer`, `booktabs`,
-  `listings`, `tcolorbox`, `adjustbox`, `ulem`, `tikz`, `csquotes`, `hyperref`.
+  `listings`, `tcolorbox`, `adjustbox`, `ulem`, `tikz`, `csquotes`, `twemojis`,
+  `hyperref`.
   (TeX Live: `texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended`.)
 
 ## Run
@@ -126,6 +127,11 @@ region markers).
 Straight quotes are curled automatically — `"double"` and `'single'` become
 proper typographic quotes, apostrophes are preserved, and quotes inside code
 (inline or fenced) stay straight.
+
+Emoji typed straight into the markdown (e.g. `✨`, `🚀`) render as Twitter-style
+vectors via `twemojis` — no engine switch, still pdflatex. Single-codepoint
+emoji are covered; unmapped sequences (some flags/ZWJ) are dropped silently
+rather than erroring.
 
 ## Example
 

@@ -202,6 +202,20 @@ def tex_escape(text):
     return "".join(_TEX_SPECIALS.get(ch, ch) for ch in text)
 
 
+# Emoji characters (common Unicode emoji ranges). An optional trailing U+FE0F
+# (emoji variation selector) is consumed and dropped so we key on the base char.
+_EMOJI_RE = re.compile(
+    "[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U00002300-\U000023FF"
+    "\U00002B00-\U00002BFF\U0001F1E6-\U0001F1FF]️?"
+)
+
+
+def _emojify(text):
+    """Replace emoji chars with \\emojicp{<hex>} (twemojis codepoint form).
+    Runs on already tex-escaped text, so it emits raw LaTeX safely."""
+    return _EMOJI_RE.sub(lambda m: "\\emojicp{%x}" % ord(m.group(0)[0]), text)
+
+
 def render_inline(text, ctx):
     """Inline markdown -> LaTeX. ctx carries the slide dir for image paths."""
     store = []
@@ -243,7 +257,7 @@ def render_inline(text, ctx):
     text = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", lambda m: E0 + m.group(1) + E1, text)
     text = re.sub(r"(?<!_)_([^_\n]+)_(?!_)", lambda m: E0 + m.group(1) + E1, text)
 
-    text = tex_escape(text)
+    text = _emojify(tex_escape(text))
     text = text.replace(B0, r"\textbf{").replace(B1, "}")
     text = text.replace(E0, r"\emph{").replace(E1, "}")
     text = text.replace(S0, r"\sout{").replace(S1, "}")
@@ -251,7 +265,7 @@ def render_inline(text, ctx):
 
     def put_link(m):
         href, label = links[int(m.group(1))]
-        return r"\href{" + href.replace("%", r"\%").replace("#", r"\#") + "}{" + tex_escape(label) + "}"
+        return r"\href{" + href.replace("%", r"\%").replace("#", r"\#") + "}{" + _emojify(tex_escape(label)) + "}"
     text = re.sub(r"\x00L(\d+)\x00", put_link, text)
 
     def put_img(m):
@@ -260,7 +274,7 @@ def render_inline(text, ctx):
     text = re.sub(r"\x00I(\d+)\x00", put_img, text)
 
     def put_code(m):
-        return r"\texttt{" + tex_escape(store[int(m.group(1))]) + "}"
+        return r"\texttt{" + _emojify(tex_escape(store[int(m.group(1))])) + "}"
     text = re.sub(r"\x00C(\d+)\x00", put_code, text)
     return text
 
@@ -294,7 +308,12 @@ def render_blocks(lines, ctx):
                 code.append(lines[i])
                 i += 1
             i += 1
-            parts.append("\\begin{lstlisting}\n" + "\n".join(code) + "\n\\end{lstlisting}")
+            # Emoji would crash inputenc inside verbatim listings; route each
+            # through the lstlisting escape delimiters so it renders as a twemoji
+            # while the surrounding code stays verbatim.
+            body = _EMOJI_RE.sub(
+                lambda mm: "(*@\\emojicp{%x}@*)" % ord(mm.group(0)[0]), "\n".join(code))
+            parts.append("\\begin{lstlisting}\n" + body + "\n\\end{lstlisting}")
             continue
 
         if s.startswith("|") and i + 1 < n and re.match(r"^\s*\|?[\s:|-]+\|?\s*$", lines[i + 1]):
@@ -698,7 +717,13 @@ PREAMBLE = r"""\documentclass[aspectratio=169]{beamer}
 \usepackage{tikz}
 \usepackage[autostyle=true]{csquotes}
 \MakeOuterQuote{"}
+\usepackage{twemojis}
 \usepackage{hyperref}
+
+% Emoji: markdown emoji chars are rewritten to \emojicp{<hex codepoint>}, drawn
+% as a Twitter-style vector by twemojis (keeps the pdflatex pipeline). Guarded so
+% an unmapped codepoint (e.g. a flag/ZWJ sequence) renders nothing, not an error.
+\newcommand{\emojicp}[1]{\ifcsname twemoji #1\endcsname\texttwemoji{#1}\fi}
 
 \definecolor{primary}{RGB}{@@PRIMARY@@}
 \definecolor{secondary}{RGB}{@@SECONDARY@@}
@@ -739,7 +764,8 @@ PREAMBLE = r"""\documentclass[aspectratio=169]{beamer}
 \lstset{
   basicstyle=\ttfamily\small, backgroundcolor=\color{codebg},
   frame=none, breaklines=true, columns=fullflexible, keepspaces=true,
-  xleftmargin=0.6em, aboveskip=0.8em, belowskip=0.8em}
+  xleftmargin=0.6em, aboveskip=0.8em, belowskip=0.8em,
+  escapeinside={(*@}{@*)}}
 
 \hypersetup{colorlinks=true,urlcolor=accent,linkcolor=accent}
 
