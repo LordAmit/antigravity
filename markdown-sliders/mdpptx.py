@@ -16,9 +16,13 @@ exists, else skipped with a warning.
 Invoked from mdslides.py via `--format pptx`; not a standalone CLI.
 """
 
+import hashlib
 import os
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 
 from pptx import Presentation
 from pptx.util import Inches, Pt, Emu
@@ -46,6 +50,10 @@ def parse_runs(text):
     """Parse inline markdown into a list of run dicts:
     {text, bold, italic, strike, underline, code, link}. Non-nested spans only
     (nested formatting degrades to the outer span); links carry a URL."""
+    # Inline (mid-text) images can't flow inside a pptx text run; drop the
+    # syntax so it doesn't render as a broken "!alt" link. Standalone image
+    # lines are handled as their own block by parse_blocks.
+    text = re.sub(r"!\[[^\]]*\]\([^)\s]+\)", "", text)
     links = []
 
     def grab_link(m):
@@ -116,6 +124,11 @@ def parse_blocks(lines):
     while i < n:
         s = lines[i].strip()
         if not s:
+            i += 1
+            continue
+        m = re.match(r"^!\[([^\]]*)\]\(([^)\s]+)\)\s*$", s)  # standalone image line
+        if m:
+            blocks.append({"type": "image", "alt": m.group(1), "src": m.group(2)})
             i += 1
             continue
         m = re.match(r"^```(\w*)\s*$", s)
@@ -273,12 +286,23 @@ def _est_height(block, width_in, pt):
 # Block rendering (flow: stack shapes top-to-bottom in an area)
 # ---------------------------------------------------------------------------
 
-def render_flow(slide, blocks, area, colors, base_pt=18):
+def render_flow(slide, blocks, area, colors, base_pt=18, imgctx=None):
     left, top, width, height = area
     y = top
     for b in blocks:
         h = _est_height(b, width, base_pt)
-        if b["type"] == "table":
+        if b["type"] == "image":
+            path = None
+            if imgctx:
+                path = _resolve_image(b["src"], imgctx["dir"], imgctx["tmpdir"], imgctx["conv"])
+            if path:
+                # Place at actual fitted size and advance by its real height.
+                maxh = min(3.5, top + height - y)
+                pic = _fit_picture(slide, path, left + width / 2, y + maxh / 2, width, maxh)
+                h = pic.height / 914400.0
+            else:
+                h = 0
+        elif b["type"] == "table":
             _add_table(slide, b["rows"], left, y, width, colors, base_pt)
         elif b["type"] == "quote":
             box, tf = _textbox(slide, left, y, width, h, fill=colors["code_bg"])
@@ -356,18 +380,50 @@ def _title_box(slide, title, colors):
 # Image handling
 # ---------------------------------------------------------------------------
 
-def _resolve_image(src, slide_dir):
-    """Resolve an image path relative to the slide; swap .pdf/.svg for a .png
-    sibling if present (python-pptx can't embed those). Returns a path or None."""
+def _convert_to_png(src, tmpdir):
+    """Rasterize a .pdf (pdftocairo) or .svg (inkscape) to a PNG in tmpdir at
+    high resolution. Returns the PNG path, or None if the tool is missing/fails.
+    The output name is keyed on the full source path (hashed) so images that
+    share a basename across different directories don't collide."""
+    base = os.path.splitext(os.path.basename(src))[0]
+    uniq = hashlib.md5(os.path.abspath(src).encode("utf-8")).hexdigest()[:8]
+    stem = os.path.join(tmpdir, f"{base}-{uniq}")
+    out = stem + ".png"
+    ext = os.path.splitext(src)[1].lower()
+    try:
+        if ext == ".pdf":
+            subprocess.run(["pdftocairo", "-png", "-singlefile", "-r", "300", src, stem],
+                           check=True, capture_output=True)
+        elif ext == ".svg":
+            subprocess.run(["inkscape", src, "--export-type=png",
+                            "--export-filename=" + out, "-w", "1600"],
+                           check=True, capture_output=True)
+        else:
+            return None
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    return out if os.path.isfile(out) else None
+
+
+def _resolve_image(src, slide_dir, tmpdir, cache):
+    """Resolve an image path relative to the slide. python-pptx can't embed
+    .pdf/.svg, so those are rasterized to a PNG in tmpdir (cached per build);
+    if conversion is unavailable, an existing .png sibling is used, else the
+    image is skipped with a warning. Returns a path or None."""
     if not os.path.isabs(src):
         src = os.path.normpath(os.path.join(slide_dir, src))
     if src.lower().endswith((".pdf", ".svg")):
-        png = os.path.splitext(src)[0] + ".png"
-        if os.path.isfile(png):
-            return png
-        print(f"warning: cannot embed '{os.path.basename(src)}' in pptx "
-              f"(no .png sibling); skipping.", file=sys.stderr)
-        return None
+        if src in cache:
+            return cache[src]
+        png = _convert_to_png(src, tmpdir)
+        if not png:
+            sib = os.path.splitext(src)[0] + ".png"
+            png = sib if os.path.isfile(sib) else None
+        if not png:
+            print(f"warning: cannot embed '{os.path.basename(src)}' in pptx "
+                  f"(conversion failed, no .png sibling); skipping.", file=sys.stderr)
+        cache[src] = png
+        return png
     if not os.path.isfile(src):
         print(f"warning: image not found: {src}", file=sys.stderr)
         return None
@@ -399,12 +455,12 @@ def _dark_bg(slide, colors):
     slide.background.fill.fore_color.rgb = colors["primary"]
 
 
-def slide_default(prs, colors, title, body_lines):
+def slide_default(prs, colors, title, body_lines, imgctx=None):
     s = _blank(prs)
     _bg(s, colors)
     if title:
         _title_box(s, title, colors)
-    render_flow(s, parse_blocks(body_lines), (MARGIN, BODY_TOP, CONTENT_W, BODY_H), colors)
+    render_flow(s, parse_blocks(body_lines), (MARGIN, BODY_TOP, CONTENT_W, BODY_H), colors, imgctx=imgctx)
     return s
 
 
@@ -413,14 +469,14 @@ def _bg(slide, colors):
     slide.background.fill.fore_color.rgb = colors["bg"]
 
 
-def slide_two_column(prs, colors, title, left_lines, right_lines):
+def slide_two_column(prs, colors, title, left_lines, right_lines, imgctx=None):
     s = _blank(prs)
     _bg(s, colors)
     if title:
         _title_box(s, title, colors)
     colw = (CONTENT_W - 0.5) / 2
-    render_flow(s, parse_blocks(left_lines), (MARGIN, BODY_TOP, colw, BODY_H), colors)
-    render_flow(s, parse_blocks(right_lines), (MARGIN + colw + 0.5, BODY_TOP, colw, BODY_H), colors)
+    render_flow(s, parse_blocks(left_lines), (MARGIN, BODY_TOP, colw, BODY_H), colors, imgctx=imgctx)
+    render_flow(s, parse_blocks(right_lines), (MARGIN + colw + 0.5, BODY_TOP, colw, BODY_H), colors, imgctx=imgctx)
     return s
 
 
@@ -443,7 +499,7 @@ def slide_big_stat(prs, colors, title, stat, caption):
     return s
 
 
-def slide_image_side(prs, colors, title, img_path, side, scale, text_lines, caption, credit):
+def slide_image_side(prs, colors, title, img_path, side, scale, text_lines, caption, credit, imgctx=None):
     s = _blank(prs)
     _bg(s, colors)
     if title:
@@ -465,11 +521,11 @@ def slide_image_side(prs, colors, title, img_path, side, scale, text_lines, capt
             p = tf.paragraphs[0]
             p.alignment = PP_ALIGN.CENTER
             _apply_runs(p, parse_runs(credit), colors, 11, colors["muted"])
-    render_flow(s, parse_blocks(text_lines), (txt_x, BODY_TOP, colw, BODY_H), colors)
+    render_flow(s, parse_blocks(text_lines), (txt_x, BODY_TOP, colw, BODY_H), colors, imgctx=imgctx)
     return s
 
 
-def slide_dark(prs, colors, kind, title, subtitle, subsubtitle, kicker, leftover, ctx):
+def slide_dark(prs, colors, kind, title, subtitle, subsubtitle, kicker, leftover, imgctx=None):
     s = _blank(prs)
     _dark_bg(s, colors)
     sizes = {"title": 40, "section": 34, "closing": 28}
@@ -511,7 +567,7 @@ def slide_dark(prs, colors, kind, title, subtitle, subsubtitle, kicker, leftover
         _apply_runs(p, [dict(r, italic=True) for r in parse_runs(subsubtitle)], colors, 16, colors["darkfg"])
         y += 0.5
     if leftover:
-        render_flow(s, parse_blocks(leftover), (MARGIN, y, CONTENT_W, 2.0), colors)
+        render_flow(s, parse_blocks(leftover), (MARGIN, y, CONTENT_W, 2.0), colors, imgctx=imgctx)
     return s
 
 
@@ -541,25 +597,41 @@ def build_pptx(deck_cfg, slides, theme, manifest_dir, out_path, extract_dark):
     prs.slide_height = Inches(SLIDE_H)
     colors = theme_ctx(theme)
 
+    # Scratch dir for images rasterized from .pdf/.svg this build (thrown away).
+    tmpdir = tempfile.mkdtemp(prefix="mdpptx-")
+    conv = {}
+    try:
+        _render_all(prs, deck_cfg, slides, manifest_dir, colors,
+                    extract_dark, region, tmpdir, conv)
+        prs.save(out_path)
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+    return out_path
+
+
+def _render_all(prs, deck_cfg, slides, manifest_dir, colors,
+                extract_dark, region, tmpdir, conv):
     logo_ref = deck_cfg.get("logo") or os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "deck", "usf-logo.png")
     if not os.path.isabs(logo_ref):
         logo_ref = os.path.normpath(os.path.join(manifest_dir, logo_ref))
-    if logo_ref.lower().endswith(".pdf"):
-        alt = os.path.splitext(logo_ref)[0] + ".png"
-        logo_ref = alt if os.path.isfile(alt) else logo_ref
+    logo_png = _resolve_image(logo_ref, ".", tmpdir, conv) \
+        if logo_ref.lower().endswith((".pdf", ".svg")) else logo_ref
 
     for slide in slides:
         layout = slide["layout"]
         fm = slide["frontmatter"]
         title = slide["title"] or _first_title(slide)
+        # Image-resolution context for inline body images (resolved relative to
+        # this slide file; .pdf/.svg auto-rasterized into tmpdir).
+        imgctx = {"dir": slide["dir"], "tmpdir": tmpdir, "conv": conv}
 
         if layout in ("title", "section", "closing"):
             t, sub, subsub, kicker, leftover = extract_dark(slide, layout)
-            slide_dark(prs, colors, layout, t, sub, subsub, kicker, leftover, slide)
+            slide_dark(prs, colors, layout, t, sub, subsub, kicker, leftover, imgctx)
         elif layout == "two-column":
             slide_two_column(prs, colors, title,
-                             region(slide, "left"), region(slide, "right"))
+                             region(slide, "left"), region(slide, "right"), imgctx)
         elif layout == "big-stat":
             stat = fm.get("stat") or " ".join(
                 l.strip() for l in region(slide, "stat", "number") if l.strip())
@@ -574,7 +646,7 @@ def build_pptx(deck_cfg, slides, theme, manifest_dir, out_path, extract_dark):
                     if m:
                         src = m.group(1)
                         break
-            img_path = _resolve_image(src, slide["dir"]) if src else None
+            img_path = _resolve_image(src, slide["dir"], tmpdir, conv) if src else None
             try:
                 scale = float(fm["scale"]) if fm.get("scale") is not None else 1.0
             except (TypeError, ValueError):
@@ -582,19 +654,16 @@ def build_pptx(deck_cfg, slides, theme, manifest_dir, out_path, extract_dark):
             text_lines = slide["body_lines"] or region(slide, "text")
             slide_image_side(prs, colors, title, img_path,
                              (fm.get("image_side") or "left").lower(), scale,
-                             text_lines, fm.get("caption"), fm.get("credit"))
+                             text_lines, fm.get("caption"), fm.get("credit"), imgctx)
         else:
             body = list(slide["body_lines"])
             for name, lines in slide["regions"].items():
                 body.append("#### " + name.capitalize())
                 body.extend(lines)
-            slide_default(prs, colors, title, body)
+            slide_default(prs, colors, title, body, imgctx)
 
         if _wants_logo(fm):
-            _footer_logo(prs.slides[-1], logo_ref)
-
-    prs.save(out_path)
-    return out_path
+            _footer_logo(prs.slides[-1], logo_png)
 
 
 def _wants_logo(fm):

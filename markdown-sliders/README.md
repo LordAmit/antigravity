@@ -44,10 +44,16 @@ python3 -m venv .venv && .venv/bin/pip install python-pptx pyyaml
 Fidelity is "editable, close" rather than pixel-identical to the PDF. Known
 degradations: code blocks lose LaTeX syntax highlighting (plain monospace),
 block/paragraph spacing is estimated, and vector rules become thin rectangles.
-Emoji render via PowerPoint's own font. Images must be raster/EMF — a referenced
-`.pdf`/`.svg` (e.g. the logo) is swapped for a `.png` sibling if present, else
-skipped. Note pptx uses strict YAML, so quote frontmatter values containing a
-colon (e.g. `credit: "(photo: J. Doe)"`).
+Emoji render via PowerPoint's own font. Inline body images (`![alt](path)` on
+their own line) are placed in the flow, and the `image:` key and logo are
+embedded too — every image resolves **relative to the slide file** (relative
+paths like `../figs/plot.pdf` are fine). PowerPoint can't embed `.pdf`/`.svg`
+graphics, so any referenced one is **auto-rasterized to PNG** at build time —
+`.pdf` via `pdftocairo`, `.svg` via `inkscape` — into a throwaway temp dir (the
+deck folder is left untouched); if neither tool is available it falls back to a
+`.png` sibling, else skips the image. Note pptx uses strict
+YAML, so quote frontmatter values containing a colon (e.g.
+`credit: "(photo: J. Doe)"`).
 
 ## The manifest
 
