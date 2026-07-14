@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evaluating Security Tooling in the Age of AI</title>
+<style>
+/* ---- Theme: Editorial (amitsealami.com) ------------------------------- */
+:root{
+  --bg:#ffffff; --panel:#f6f7f8; --heading:#3d4449; --body:#7f888f;
+  --ink:#3d4449; --accent:#f56a6a; --border:rgba(210,215,217,.75); --bw:600;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--body);
+  font-family:"Open Sans","Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:15px;line-height:1.65}
+a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+a:hover{border-bottom-style:solid}
+header{max-width:1200px;margin:0 auto;padding:2.2em 1.4em 0}
+header h1{color:var(--heading);font-weight:700;letter-spacing:.02em;
+  font-size:1.9em;margin:0 0 .25em;line-height:1.25}
+header .byline{margin:.1em 0;font-size:1em}
+header .venue{margin:.1em 0 0;font-size:.85em;letter-spacing:.05em;
+  text-transform:uppercase;color:#9aa3a9}
+main{max-width:1200px;margin:1.6em auto 4em;padding:0 1.4em;
+  display:grid;grid-template-columns:minmax(0,7fr) minmax(0,4fr);
+  gap:2em;align-items:start}
+#slidewrap{position:sticky;top:1em}
+#slidehost{position:relative;width:100%;aspect-ratio:12191695 / 6858000;
+  container-type:size;background:#fff;border:1px solid var(--border);
+  border-radius:4px;box-shadow:0 2px 10px rgba(61,68,73,.06);overflow:hidden}
+.slide{position:absolute;inset:0;color:var(--ink)}
+.shp{position:absolute}
+.shp.txt p{color:inherit}
+.shp img{display:block;max-width:100%}
+.anc-c{display:flex;flex-direction:column;justify-content:center}
+.anc-b{display:flex;flex-direction:column;justify-content:flex-end}
+.bux{display:inline-block;width:2.2cqw;flex:none}
+[data-step]{visibility:hidden}
+[data-step].on{visibility:visible}
+.shp table{border-collapse:collapse;position:absolute;inset:0;width:100%;height:100%}
+.shp td{border:0.08cqw solid var(--border);padding:.4cqh .6cqw}
+#progress{display:flex;align-items:center;gap:1em;margin:.9em 0 .4em;
+  font-size:.8em;letter-spacing:.06em;text-transform:uppercase;color:#9aa3a9}
+#progress input[type=range]{flex:1;accent-color:var(--accent)}
+.navbtns{display:flex;align-items:center;gap:.6em;flex-wrap:wrap}
+.navbtns button{font-family:inherit;font-size:.8em;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--heading);background:transparent;
+  border:1px solid var(--border);border-radius:4px;padding:.55em 1.1em;
+  cursor:pointer;transition:border-color .15s,color .15s}
+.navbtns button:hover{border-color:var(--accent);color:var(--accent)}
+.navbtns .keyhint{margin-left:auto;font-size:.75em;color:#b6bdc2}
+#narr{max-height:calc(100vh - 4em);overflow-y:auto;
+  padding:.2em .2em .2em 0;scroll-behavior:smooth}
+#narr .seg{opacity:.38;transition:opacity .3s ease;
+  padding:.15em 0 .15em 1.1em;margin:0 0 1.1em;border-left:2px solid transparent}
+#narr .seg.cur{opacity:1;border-left-color:var(--accent)}
+#narr .seg p{margin:.55em 0}
+#narr .seg code{font-family:ui-monospace,Menlo,Consolas,monospace;
+  font-size:.9em;background:var(--panel);border-radius:3px;padding:.1em .35em}
+#narr .seg strong{color:var(--heading)}
+#narr:empty::after{content:"No notes for this slide.";font-style:italic;color:#b6bdc2}
+#toc{grid-column:1 / -1;border-top:1px solid var(--border);padding-top:1.4em}
+#toc .t{font-size:.75em;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--heading);font-weight:700;margin-bottom:.7em}
+#toc a{display:block;cursor:pointer;margin:.3em 0;border-bottom:none;color:var(--body)}
+#toc a:hover{color:var(--accent)}
+#toc a.on{color:var(--accent);font-weight:600}
+@media (max-width:900px){
+  main{grid-template-columns:1fr;gap:1.2em}
+  #slidewrap{position:sticky;top:0;background:var(--bg);z-index:5;padding-top:.4em}
+  #narr{max-height:none;overflow:visible}
+}
+@media (prefers-reduced-motion:reduce){
+  #narr{scroll-behavior:auto}
+  #narr .seg{transition:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Evaluating Security Tooling in the Age of AI</h1>
+  <p class="byline">Amit Seal Ami, University of South Florida</p>
+  <p class="venue">Demo build - July 2026 - slides + annotations</p>
+</header>
+<main>
+  <div id="slidewrap">
+    <div id="slidehost"></div>
+    <div id="progress"></div>
+    <div class="navbtns">
+      <button onclick="jump(1)" title="Back to the first slide">&laquo; Start</button>
+      <button onclick="step(-1)">&larr; Previous</button>
+      <span class="keyhint">Use arrow keys to navigate</span>
+      <button onclick="step(1)">Next &rarr;</button>
+    </div>
+  </div>
+  <div id="narr"></div>
+  <div id="toc"><div class="t">In this talk</div><a data-lo="1" data-hi="2" onclick="jump(1)">Opening</a><a data-lo="2" data-hi="3" onclick="jump(2)">Capabilities</a><a data-lo="3" data-hi="4" onclick="jump(3)">Data</a></div>
+</main>
+<script>
+const FRAGS = {"1": "<div class=\"slide\" id=\"s1\"><div data-spid=\"2\" class=\"shp txt k-other\" style=\"left:11.25%;top:32.00%;width:77.25%;height:29.33%;padding:0.67cqh 0.75cqw;\"><p style=\"margin:0 0 .3em 0;font-size:4.17cqw;text-align:center\"><span style=\"font-size:4.17cqw;font-weight:var(--bw,600)\">Evaluating Security Tooling in the Age of AI</span></p><p style=\"margin:0 0 .3em 0;font-size:2.08cqw;text-align:center\"><span style=\"font-size:2.08cqw;color:#7F888F\">A demo of the annotated-slides pipeline</span></p></div></div>", "2": "<div class=\"slide\" id=\"s2\"><div data-spid=\"2\" class=\"shp txt k-other\" style=\"left:6.75%;top:5.33%;width:86.25%;height:14.67%;padding:0.67cqh 0.75cqw;\"><p style=\"margin:0 0 .3em 0;font-size:3.33cqw\"><span style=\"font-size:3.33cqw;font-weight:var(--bw,600)\">What the converter handles</span></p></div><div data-spid=\"3\" class=\"shp txt k-other\" style=\"left:6.75%;top:24.00%;width:48.00%;height:61.33%;padding:0.67cqh 0.75cqw;\"><p style=\"margin:0 0 .3em 0;font-size:2.29cqw\"><span style=\"font-size:2.29cqw\">• Selectable, positioned text</span></p><p style=\"margin:0 0 .3em 0;font-size:2.29cqw\"><span style=\"font-size:2.29cqw\">• Exported images</span></p><p style=\"margin:0 0 .3em 0;font-size:2.29cqw\"><span style=\"font-size:2.29cqw\">• Colors, bold, italic, links</span></p><p style=\"margin:0 0 .3em 0;font-size:1.88cqw\"><a href=\"https://amitsealami.com\"><span style=\"font-size:1.88cqw;font-style:italic\">See amitsealami.com</span></a></p></div><img data-spid=\"4\" class=\"shp\" style=\"left:60.00%;top:26.67%;width:33.00%;height:38.67%;\" src=\"media/slide02-4.png\" alt=\"\"></div>", "3": "<div class=\"slide\" id=\"s3\"><div data-spid=\"2\" class=\"shp txt k-other\" style=\"left:6.75%;top:5.33%;width:86.25%;height:14.67%;padding:0.67cqh 0.75cqw;\"><p style=\"margin:0 0 .3em 0;font-size:3.33cqw\"><span style=\"font-size:3.33cqw;font-weight:var(--bw,600)\">A small table</span></p></div><div data-spid=\"3\" class=\"shp\" style=\"left:11.25%;top:29.33%;width:75.00%;height:26.67%;\"><table><col style=\"width:33.33%\"><col style=\"width:33.33%\"><col style=\"width:33.33%\"><tr><td style=\"vertical-align:middle\"><p style=\"margin:0 0 .3em 0;font-size:1.46cqw\"><span style=\"font-size:1.46cqw\">Tool</span></p></td><td style=\"vertical-align:middle\"><p style=\"margin:0 0 .3em 0;font-size:1.46cqw\"><span style=\"font-size:1.46cqw\">Precision</span></p></td><td style=\"vertical-align:middle\"><p style=\"margin:0 0 .3em 0;font-size:1.46cqw\"><span style=\"font-size:1.46cqw\">Recall</span></p></td></tr><tr><td style=\"vertical-align:middle\"><p style=\"margin:0 0 .3em 0;font-size:1.46cqw\"><span style=\"font-size:1.46cqw\">DemoSAST</span></p></td><td style=\"vertical-align:middle\"><p style=\"margin:0 0 .3em 0;font-size:1.46cqw\"><span style=\"font-size:1.46cqw\">0.91</span></p></td><td style=\"vertical-align:middle\"><p style=\"margin:0 0 .3em 0;font-size:1.46cqw\"><span style=\"font-size:1.46cqw\">0.62</span></p></td></tr></table></div></div>"};
+const NARR = {"1": ["Welcome! This opening narration is click-state zero of slide one.", "This second paragraph appears on the *next* click, and the first one dims - just like the [original page](https://www.cs.princeton.edu/~arvindn/talks/icml-2026-annotated-slides/)."], "2": ["One segment, **bold works**, `code works`.", "Second click on slide two.", "Third click on slide two."], "3": [""]};
+const N = 3;
+let si = 1, cur = 0;
+function host(){ return document.getElementById('slidehost'); }
+function maxStep(){
+  let m = 0;
+  host().querySelectorAll('[data-step]').forEach(e => m = Math.max(m, +e.dataset.step));
+  m = Math.max(m, (NARR[si] || []).length - 1);
+  return m;
+}
+function mdRender(t){
+  let s = t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+  return s.split(/\n{2,}/).map(b => '<p>' + b.replace(/\n/g, '<br>') + '</p>').join('');
+}
+let slideChanged = false;
+function show(){
+  host().innerHTML = FRAGS[si];
+  host().querySelectorAll('a[href]').forEach(a => { a.target = '_blank'; a.rel = 'noopener'; });
+  slideChanged = true;
+  render();
+}
+function isMobile(){ return window.matchMedia('(max-width:900px)').matches; }
+function render(){
+  host().querySelectorAll('[data-step]').forEach(e =>
+    e.classList.toggle('on', +e.dataset.step <= cur));
+  const narr = document.getElementById('narr');
+  narr.innerHTML = '';
+  (NARR[si] || []).slice(0, cur + 1).forEach((t, i, arr) => {
+    if (!t) return;
+    const d = document.createElement('div');
+    d.className = 'seg' + (i === arr.length - 1 ? ' cur' : '');
+    d.innerHTML = mdRender(t);
+    narr.appendChild(d);
+  });
+  if (slideChanged) { narr.scrollTop = 0; slideChanged = false; }
+  else {
+    const c = narr.querySelector('.cur');
+    if (c) {
+      if (isMobile()) narr.scrollTo({ top: Math.max(0, c.offsetTop - 10), behavior: 'smooth' });
+      else c.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+  document.querySelectorAll('#toc a[data-lo]').forEach(a => {
+    a.classList.toggle('on', si >= +a.dataset.lo && si < +a.dataset.hi);
+  });
+  const end = si === N && cur >= maxStep();
+  document.getElementById('progress').innerHTML =
+    `<span>slide ${si} / ${N}</span>` +
+    (end ? '<span>&mdash; end</span>' : '') +
+    `<input type="range" min="1" max="${N}" value="${si}" onclick="event.stopPropagation()"
+      oninput="jump(+this.value)" title="Jump to slide">`;
+  history.replaceState(null, '', si > 1 ? '#s' + si : location.pathname + location.search);
+}
+function jump(n){ si = Math.min(Math.max(1, n), N); cur = 0; show(); }
+function step(d){
+  const M = maxStep();
+  if (d > 0) {
+    if (cur < M) { cur++; render(); }
+    else if (si < N) { si++; cur = 0; show(); }
+  } else {
+    if (cur > 0) { cur--; render(); }
+    else if (si > 1) { si--; show(); cur = maxStep(); render(); }
+  }
+}
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
+  if (e.key === ' ' || e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); step(1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); step(-1); }
+});
+function fromHash(){
+  const m = location.hash.match(/^#s(\d+)$/);
+  if (m && +m[1] !== si) { si = Math.min(Math.max(1, +m[1]), N); cur = 0; show(); }
+}
+window.addEventListener('hashchange', fromHash);
+const m0 = location.hash.match(/^#s(\d+)$/);
+if (m0) si = Math.min(Math.max(1, +m0[1]), N);
+show();
+</script>
+</body>
+</html>
