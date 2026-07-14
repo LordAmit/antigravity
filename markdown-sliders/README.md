@@ -29,6 +29,26 @@ python3 mdslides.py deck/deck.md --keep-tex     # keep the generated .tex
 `--theme` overrides the manifest's theme. The `.tex` is generated, compiled, and
 (unless `--keep-tex`) removed along with LaTeX aux files.
 
+## PowerPoint (.pptx) output
+
+The same deck can render to a **native, editable** PowerPoint file with
+`--format pptx` — real text boxes, bullet lists, tables, and embedded images
+(not a picture-per-slide export). It needs [`python-pptx`](https://python-pptx.readthedocs.io);
+the simplest setup is a project venv:
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install python-pptx pyyaml
+.venv/bin/python mdslides.py deck/deck.md --theme usf-bulls --format pptx   # -> deck/deck.pptx
+```
+
+Fidelity is "editable, close" rather than pixel-identical to the PDF. Known
+degradations: code blocks lose LaTeX syntax highlighting (plain monospace),
+block/paragraph spacing is estimated, and vector rules become thin rectangles.
+Emoji render via PowerPoint's own font. Images must be raster/EMF — a referenced
+`.pdf`/`.svg` (e.g. the logo) is swapped for a `.png` sibling if present, else
+skipped. Note pptx uses strict YAML, so quote frontmatter values containing a
+colon (e.g. `credit: "(photo: J. Doe)"`).
+
 ## The manifest
 
 A markdown file with YAML frontmatter and a list of slide files:

@@ -504,31 +504,23 @@ def frame_image_side(slide, ctx):
     )
 
 
-def frame_dark(slide, ctx, kind="title"):
-    """title / section / closing: dark full-bleed centered frame.
+def dark_fields(slide, kind="title"):
+    """Classify a dark slide (title/section/closing) into
+    (title, subtitle, subsubtitle, kicker, leftover_lines). Shared by the Beamer
+    and pptx emitters so both agree on how the content is bucketed.
 
-    All three are centered on the dark background and share the same content
-    model, but differ by title size (title > section > closing) and a couple of
-    accents: every one draws a short horizontal rule under its title (with a gap
-    after), and `section` may carry an optional `kicker:` eyebrow above the title.
-
-    Title  = frontmatter `title` OR first #/## heading in the free body.
+    Title = frontmatter `title` OR first #/## heading in the free body.
     Subtitle = `### Subtitle` region OR frontmatter `subtitle` OR first plain
                body paragraph that isn't the title/byline.
     Subsubtitle = frontmatter `subsubtitle` (alias `author`) OR an italic-only
-               body line.
-    Any remaining free body text renders below (e.g. "Questions?").
+               body line. Kicker = frontmatter `kicker` (section only).
     """
     fm = slide["frontmatter"]
-
-    # --- title ---
     title = fm.get("title") or _first_heading_text(slide)
-    title_tex = render_inline(str(title), ctx) if title else ""
 
-    # Dark frames flatten all text (free body + every region's content) into one
-    # pool, then classify: skip the title heading, pull an italic-only line as
-    # the byline, treat a `### Subtitle` region (or frontmatter) as subtitle,
-    # and render anything else below.
+    # Flatten all text (free body + every region's content) into one pool, then
+    # classify: skip the title heading, pull an italic-only line as the byline,
+    # treat a `### Subtitle` region (or frontmatter) as subtitle, rest below.
     pool = list(slide["body_lines"])
     sub_region = region(slide, "subtitle")
     for name, lines in slide["regions"].items():
@@ -569,8 +561,23 @@ def frame_dark(slide, ctx, kind="title"):
     if subtitle is None and leftover:
         subtitle = leftover.pop(0).strip()
 
+    kicker = fm.get("kicker") if kind == "section" else None
+    return title, subtitle, subsubtitle, kicker, leftover
+
+
+def frame_dark(slide, ctx, kind="title"):
+    """title / section / closing: dark full-bleed centered frame.
+
+    All three are centered on the dark background and share the same content
+    model, but differ by title size (title > section > closing) and a couple of
+    accents: every one draws a short horizontal rule under its title (with a gap
+    after), and `section` may carry an optional `kicker:` eyebrow above the title.
+    """
+    title, subtitle, subsubtitle, kicker, leftover = dark_fields(slide, kind)
+    title_tex = render_inline(str(title), ctx) if title else ""
     subtitle_tex = render_inline(subtitle, ctx) if subtitle else ""
     subsubtitle_tex = render_inline(str(subsubtitle), ctx) if subsubtitle else ""
+    kicker_tex = render_inline(str(kicker), ctx) if kicker else ""
 
     # Size hierarchy: title (biggest) > section > closing.
     sizes = {
@@ -579,10 +586,6 @@ def frame_dark(slide, ctx, kind="title"):
         "closing": r"\fontsize{28}{34}\selectfont",
     }
     size = sizes.get(kind, sizes["title"])
-
-    # Optional eyebrow above a section title.
-    kicker = fm.get("kicker") if kind == "section" else None
-    kicker_tex = render_inline(str(kicker), ctx) if kicker else ""
 
     inner = "\\centering\\vfill\n"
     if kicker_tex:
@@ -889,7 +892,9 @@ def main(argv=None):
     ap = argparse.ArgumentParser(
         description="Compose a slide deck from a manifest + per-slide markdown files -> PDF.")
     ap.add_argument("manifest", nargs="?", help="Deck manifest markdown file")
-    ap.add_argument("-o", "--output", help="Output PDF path (default: alongside manifest)")
+    ap.add_argument("-o", "--output", help="Output path (default: alongside manifest, extension from --format)")
+    ap.add_argument("--format", choices=("pdf", "pptx"), default="pdf",
+                    help="Output format: pdf (Beamer, default) or pptx (native, editable)")
     ap.add_argument("--theme", help="Theme preset (overrides manifest); default from manifest or midnight-executive")
     ap.add_argument("--theme-file", help="Custom theme JSON (overrides bundled presets)")
     ap.add_argument("--list-themes", action="store_true", help="List theme presets and exit")
@@ -933,6 +938,21 @@ def main(argv=None):
     theme = load_theme(theme_name, args.theme_file)
 
     manifest_dir = os.path.dirname(os.path.abspath(args.manifest))
+
+    if args.format == "pptx":
+        try:
+            import mdpptx
+        except ImportError:
+            print("error: pptx output needs python-pptx. Install it (e.g. in a venv):\n"
+                  "  python3 -m venv .venv && .venv/bin/pip install python-pptx\n"
+                  "then run with .venv/bin/python mdslides.py ... --format pptx",
+                  file=sys.stderr)
+            return 1
+        out_pptx = args.output or (os.path.splitext(args.manifest)[0] + ".pptx")
+        mdpptx.build_pptx(deck_cfg, slides, theme, manifest_dir, out_pptx, dark_fields)
+        print(f"Wrote {len(slides)} slide(s) [{theme.get('label','')}] -> {out_pptx}")
+        return 0
+
     doc = build_document(deck_cfg, slides, theme, manifest_dir)
 
     out_pdf = args.output or (os.path.splitext(args.manifest)[0] + ".pdf")

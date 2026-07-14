@@ -5,7 +5,7 @@ title: Image beside text
 image: diagram.png
 scale: .9
 caption: A simple Architecture Diagram
-credit: (photo credit: mdslides deck)
+credit: "(photo credit: mdslides deck)"
 ---
 The image resolves relative to **this slide file**.
 
