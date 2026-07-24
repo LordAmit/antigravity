@@ -1,10 +1,10 @@
 # slides2web — annotated slides for the web
 
-Converts a `.pptx` into a single-page site in the style of Narayanan's
-ICML 2026 annotated slides: real selectable HTML text (not screenshots),
-arrow-key / click navigation, deep-linkable states (`#s12`), and a
-transcript panel where the current annotation is highlighted and earlier
-ones fade to semi-transparent. Theme matches amitsealami.com (HTML5 UP
+Converts a `.pptx` into a single-page site of annotated slides: real
+selectable HTML text (not screenshots), arrow-key / click navigation,
+deep-linkable states (`#s12`), and a transcript panel where the current
+annotation is highlighted and earlier ones fade to semi-transparent.
+Theme matches amitsealami.com (HTML5 UP
 "Editorial": white, slate, coral accent, Open Sans).
 
 ## Requirements
@@ -36,10 +36,9 @@ containing only `---` starts a new click-state:
 Notes support a small markdown subset: **bold**, *italic*, `code`, and
 [links](https://example.com).
 
-If your annotations come from a talk recording instead (the Narayanan
-route): transcribe the audio (e.g., Whisper), paste segments into each
-slide's speaker notes with `---` separators at the points where you
-clicked, and re-run.
+If your annotations come from a talk recording instead: transcribe the
+audio (e.g., Whisper), paste segments into each slide's speaker notes
+with `---` separators at the points where you clicked, and re-run.
 
 ## Per-element build steps (optional, manual)
 

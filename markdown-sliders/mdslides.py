@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
 mdslides.py — Compose a slide deck from a manifest + per-slide markdown files,
-render it to PDF via Beamer/LaTeX.
+and render it to PDF (Beamer/LaTeX) or a native, editable PowerPoint (.pptx).
 
 Model
 -----
 A DECK is a manifest markdown file:
 
     ---
-    theme: midnight-executive
+    theme: usf-bulls
     title: Building Better Slides
     author: Amit
     ---
@@ -18,32 +18,39 @@ A DECK is a manifest markdown file:
     - slides/02-stats.md
 
 Each SLIDE is its own markdown file with optional YAML frontmatter selecting a
-layout, and a body organized into `###` named regions:
+layout. Most layouts are driven entirely by frontmatter keys; two-column still
+uses `### Left` / `### Right` regions:
 
     ---
-    layout: two-column
+    layout: image-side
+    title: Architecture
+    image: diagram.png        # relative to the slide file; .pdf/.svg ok
+    image_side: left          # left | right
+    scale: .9                 # optional
+    caption: Figure 1         # optional
+    credit: J. Doe            # optional
     ---
-    ### Left
-    - point one
-    - point two
-
-    ### Right
-    ![diagram](diagram.png)
+    - the body is the side text
 
 Layouts
 -------
-- default      title (## or frontmatter `title:`) + body markdown
-- title        dark full-bleed opening slide (centered)
-- section      dark full-bleed divider slide (centered)
-- closing      dark full-bleed closing slide (centered)
+- default      frontmatter `title:` + body; optional `image:`/`scale:`/
+               `caption:`/`credit:` render full-width above the body
+- title        dark opening slide; `title:`/`subtitle:`/`subsubtitle:`, rule
+- section      dark divider; `kicker:` eyebrow + `title:`, rule
+- closing      dark closing slide; `title:`/`subtitle:`, rule
 - two-column   `### Left` | `### Right`
-- big-stat     `### Stat` (huge) over `### Caption` (small)
-- image-side   `### Image` (a markdown image) beside `### Text`
+- big-stat     `stat:` (huge) over `caption:`
+- image-side   `image:` beside body text (`image_side:`, `scale:`,
+               `caption:`/`credit:`)
 
-Design follows Anthropic's pptx guidelines: no title underlines, no accent
-stripes/color bars, white content backgrounds with a dark "sandwich" (dark
-title/section/closing slides), left-aligned body, strong size contrast.
-Composition (theme = palette + typography) is data-driven via themes.json.
+Any slide may set `footer_logo: true` to stamp the USF logo in the corner.
+Inline markdown supports bold/italic/strike/`<u>underline</u>`, code, links,
+images, blockquotes, tables, `####`+ subheadings, smart quotes, and emoji
+(via twemojis). Design follows Anthropic's pptx guidelines: no title
+underlines, no accent stripes, white content with a dark "sandwich", left-
+aligned body, strong size contrast. Composition (theme = palette + typography)
+is data-driven via themes.json.
 
 Usage
 -----
@@ -53,9 +60,12 @@ Usage
     python3 mdslides.py deck.md --theme-file mine.json
     python3 mdslides.py deck.md --list-themes
     python3 mdslides.py deck.md --keep-tex          # keep the generated .tex
+    python3 mdslides.py deck.md --format pptx       # editable PowerPoint
 
-Dependencies: PyYAML (pip install pyyaml), a LaTeX toolchain (pdflatex) with
-beamer, booktabs, listings, tcolorbox, adjustbox, ulem, hyperref.
+Dependencies: PyYAML (pip install pyyaml). PDF output needs a LaTeX toolchain
+(pdflatex) with beamer, booktabs, listings, tcolorbox, adjustbox, ulem, tikz,
+csquotes, twemojis, hyperref. PPTX output needs python-pptx (see mdpptx.py);
+.pdf/.svg images are rasterized via pdftocairo / inkscape.
 """
 
 import argparse
@@ -415,10 +425,32 @@ def region(slide, *names):
 # ============================================================================
 
 def frame_default(slide, ctx):
+    fm = slide["frontmatter"]
     title = _slide_title_tex(slide, ctx)
     body = render_blocks(slide["body_lines"] + _all_region_lines(slide), ctx)
+
+    # Optional full-width image from the `image:` frontmatter key, rendered
+    # above the body. `scale:`, `caption:` and `credit:` behave as in the
+    # image-side layout.
+    img_block = ""
+    if fm.get("image"):
+        img_tex = image_tex(fm["image"], ctx)
+        if fm.get("scale") is not None:
+            try:
+                img_tex = "\\scalebox{" + repr(float(fm["scale"])) + "}{" + img_tex + "}"
+            except (TypeError, ValueError):
+                pass
+        img_block = img_tex
+        if fm.get("caption"):
+            img_block += ("\n\\par\\smallskip\n{\\color{muted}\\small\\itshape "
+                          + render_inline(str(fm["caption"]), ctx) + "\\par}")
+        if fm.get("credit"):
+            img_block += ("\n\\par\\smallskip\n{\\color{muted}\\footnotesize "
+                          + render_inline(str(fm["credit"]), ctx) + "\\par}")
+        img_block += "\n\\par\\medskip\n"
+
     head = "{" + title + "}" if title else "{}"
-    return "\\begin{frame}[fragile]" + head + "\n" + body + "\n\\end{frame}"
+    return "\\begin{frame}[fragile]" + head + "\n" + img_block + body + "\n\\end{frame}"
 
 
 def frame_two_column(slide, ctx):

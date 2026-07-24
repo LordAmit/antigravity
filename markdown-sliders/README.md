@@ -24,6 +24,7 @@ python3 mdslides.py deck/deck.md --theme teal-trust
 python3 mdslides.py deck/deck.md --theme-file mytheme.json
 python3 mdslides.py deck/deck.md --list-themes
 python3 mdslides.py deck/deck.md --keep-tex     # keep the generated .tex
+python3 mdslides.py deck/deck.md --format pptx  # editable PowerPoint (see below)
 ```
 
 `--theme` overrides the manifest's theme. The `.tex` is generated, compiled, and
@@ -93,7 +94,19 @@ title: Two column layout
 ```
 
 Images use standard markdown `![alt](path)` and resolve **relative to the slide
-file**.
+file**. A `default` slide can also declare its image in frontmatter instead of
+the body: `image:` renders full-width above the body, with optional `scale:`,
+and `caption:`/`credit:` shown muted below the image (same keys as
+`image-side`).
+
+```markdown
+---
+layout: default
+title: The Agent Loop
+image: graphics/agent-loop.pdf
+---
+- plan, act, observe, repeat
+```
 
 ## Per-slide USF logo footer
 
@@ -136,17 +149,20 @@ layouts (`title`/`section`/`closing`) form the guideline "sandwich".
 
 Presets live in `themes.json`; list them with `--list-themes`. Each theme is a
 palette (`primary`, `secondary`, `accent`, `content_bg`, `content_fg`, `muted`,
-`code_bg`, `table_head_bg`) plus typography. Add your own by editing
+`code_bg`) plus typography (`heading_tex`: `serif` or `sans`) and an optional
+`dark: true` flag for dark-background themes. Add your own by editing
 `themes.json` or passing `--theme-file yours.json` (either a `{"themes": {...}}`
 bundle or a single theme object).
 
 Bundled: `midnight-executive` (default), `warm-terracotta`, `teal-trust`,
-`charcoal-minimal`, `premium-dark`.
+`charcoal-minimal`, `usf-bulls` (USF green + gold; pairs with the logo footer),
+`premium-dark` (dark).
 
 ## Markdown supported inside slides
 
-Paragraphs, bullet/numbered lists, **bold**/*italic*/~~strike~~, `inline code`,
-fenced code blocks, links, images, blockquotes (rendered as a tinted box, not a
+Paragraphs, bullet/numbered lists, **bold**/*italic*/~~strike~~/`<u>underline</u>`,
+`inline code`, fenced code blocks, links, images (`![alt](path)` — PNG/JPG and,
+for PDF output, PDF/SVG too), blockquotes (rendered as a tinted box, not a
 stripe), pipe tables, and `####`+ sub-headings (note: `###` is reserved for
 region markers).
 

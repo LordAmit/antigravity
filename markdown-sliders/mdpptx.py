@@ -455,12 +455,37 @@ def _dark_bg(slide, colors):
     slide.background.fill.fore_color.rgb = colors["primary"]
 
 
-def slide_default(prs, colors, title, body_lines, imgctx=None):
+def slide_default(prs, colors, title, body_lines, imgctx=None,
+                  image=None, scale=1.0, caption=None, credit=None):
     s = _blank(prs)
     _bg(s, colors)
     if title:
         _title_box(s, title, colors)
-    render_flow(s, parse_blocks(body_lines), (MARGIN, BODY_TOP, CONTENT_W, BODY_H), colors, imgctx=imgctx)
+    top = BODY_TOP
+    # Optional full-width image from the `image:` frontmatter key, above the
+    # body (mirrors the PDF default layout); scale/caption/credit as image-side.
+    path = _resolve_image(image, imgctx["dir"], imgctx["tmpdir"], imgctx["conv"]) \
+        if (image and imgctx) else None
+    if path:
+        pic = s.shapes.add_picture(path, Inches(0), Inches(0))
+        f = min(Inches(CONTENT_W) / pic.width, Inches(3.0) / pic.height) * scale
+        pic.width, pic.height = int(pic.width * f), int(pic.height * f)
+        pic.left = int(Inches(SLIDE_W / 2) - pic.width / 2)
+        pic.top = int(Inches(top))
+        top += pic.height / 914400.0 + 0.12
+        for txt, pt in ((caption, 14), (credit, 11)):
+            if txt:
+                _, tf = _textbox(s, MARGIN, top, CONTENT_W, 0.4)
+                p = tf.paragraphs[0]
+                p.alignment = PP_ALIGN.CENTER
+                runs = parse_runs(txt)
+                if pt == 14:
+                    runs = [dict(r, italic=True) for r in runs]
+                _apply_runs(p, runs, colors, pt, colors["muted"])
+                top += 0.4
+        top += 0.1
+    render_flow(s, parse_blocks(body_lines),
+                (MARGIN, top, CONTENT_W, SLIDE_H - top - 0.5), colors, imgctx=imgctx)
     return s
 
 
@@ -660,7 +685,15 @@ def _render_all(prs, deck_cfg, slides, manifest_dir, colors,
             for name, lines in slide["regions"].items():
                 body.append("#### " + name.capitalize())
                 body.extend(lines)
-            slide_default(prs, colors, title, body, imgctx)
+            # `image:` frontmatter on the default layout: full-width above the
+            # body, with scale/caption/credit (mirrors the PDF default layout).
+            try:
+                dscale = float(fm["scale"]) if fm.get("scale") is not None else 1.0
+            except (TypeError, ValueError):
+                dscale = 1.0
+            slide_default(prs, colors, title, body, imgctx,
+                          image=fm.get("image"), scale=dscale,
+                          caption=fm.get("caption"), credit=fm.get("credit"))
 
         if _wants_logo(fm):
             _footer_logo(prs.slides[-1], logo_png)

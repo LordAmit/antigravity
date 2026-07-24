@@ -1,5 +1,5 @@
 {
-  "$comment": "Theme presets for mdslides.py (Beamer/PDF output). Palettes are drawn from the Anthropic pptx design guidelines. Colors are hex WITHOUT a leading '#'. 'dark' marks palettes whose content background is dark (headings then use 'accent' instead of 'primary' for contrast). The dark title/section/closing layouts form the guideline 'sandwich'. Body text is always left-aligned; only dark/centered slides center. No title underlines or accent stripes are ever emitted. typography.heading_tex is 'serif' (Beamer serif font theme) or 'sans' (professionalfonts).",
+  "$comment": "Theme presets for mdslides.py (PDF via Beamer, and native pptx). Palettes are drawn from the Anthropic pptx design guidelines. Colors are hex WITHOUT a leading '#'. 'dark' marks palettes whose content background is dark (headings then use 'accent' instead of 'primary' for contrast). The dark title/section/closing layouts form the guideline 'sandwich'. Body text is always left-aligned; only dark/centered slides center. No title underlines or accent stripes are ever emitted. typography.heading_tex is 'serif' (Beamer serif font theme) or 'sans' (professionalfonts).",
   "themes": {
     "midnight-executive": {
       "label": "Midnight Executive",
@@ -10,8 +10,7 @@
         "content_bg": "FFFFFF",
         "content_fg": "1A1A2E",
         "muted": "5A5A72",
-        "code_bg": "F0F3FB",
-        "table_head_bg": "E4EAFB"
+        "code_bg": "F0F3FB"
       },
       "dark": false,
       "typography": {
@@ -27,8 +26,7 @@
         "content_bg": "FFFFFF",
         "content_fg": "2B2320",
         "muted": "6E625B",
-        "code_bg": "F4EFE9",
-        "table_head_bg": "EDE4DA"
+        "code_bg": "F4EFE9"
       },
       "dark": false,
       "typography": {
@@ -44,8 +42,7 @@
         "content_bg": "FFFFFF",
         "content_fg": "10262B",
         "muted": "4F6B6E",
-        "code_bg": "ECF6F4",
-        "table_head_bg": "D8EEEA"
+        "code_bg": "ECF6F4"
       },
       "dark": false,
       "typography": {
@@ -61,8 +58,7 @@
         "content_bg": "FFFFFF",
         "content_fg": "212121",
         "muted": "6B7780",
-        "code_bg": "F2F2F2",
-        "table_head_bg": "E6E9EB"
+        "code_bg": "F2F2F2"
       },
       "dark": false,
       "typography": {
@@ -78,8 +74,7 @@
         "content_bg": "FFFFFF",
         "content_fg": "1A231F",
         "muted": "455F69",
-        "code_bg": "EDEBD1",
-        "table_head_bg": "E1E9DF"
+        "code_bg": "EDEBD1"
       },
       "dark": false,
       "typography": {
@@ -95,8 +90,7 @@
         "content_bg": "15162A",
         "content_fg": "ECECF2",
         "muted": "A0A2B8",
-        "code_bg": "1E2039",
-        "table_head_bg": "2A2D4A"
+        "code_bg": "1E2039"
       },
       "dark": true,
       "typography": {
