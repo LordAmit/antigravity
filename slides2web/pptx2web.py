@@ -2,8 +2,7 @@
 """
 pptx2web.py - convert a .pptx into a single-page annotated-slides site.
 
-Mirrors the architecture of Narayanan's ICML 2026 annotated-slides page:
-each slide becomes selectable, absolutely-positioned HTML (percent
+Each slide becomes selectable, absolutely-positioned HTML (percent
 coordinates, container-query font units), images are exported to media/,
 and speaker notes become click-by-click annotations that dim when inactive.
 

@@ -29,6 +29,7 @@ from pptx.util import Inches, Pt, Emu
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
+from pptx.oxml.ns import qn
 
 
 # 16:9 canvas.
@@ -54,6 +55,7 @@ def parse_runs(text):
     # syntax so it doesn't render as a broken "!alt" link. Standalone image
     # lines are handled as their own block by parse_blocks.
     text = re.sub(r"!\[[^\]]*\]\([^)\s]+\)", "", text)
+    text = re.sub(r"<br\s*/?>", "\x14", text)  # forced line break
     links = []
 
     def grab_link(m):
@@ -94,6 +96,9 @@ def parse_runs(text):
         elif ch in off:
             flush()
             cur[off[ch]] = False
+        elif ch == "\x14":
+            flush()
+            runs.append({"br": True})
         elif ch == "\x00":
             j = text.index("\x01", i)
             k = text.index("\x02", j)
@@ -107,10 +112,11 @@ def parse_runs(text):
             buf.append(ch)
         i += 1
     flush()
-    # Drop any stray control chars that slipped through.
+    # Drop any stray control chars that slipped through (leave break markers).
     for r in runs:
-        r["text"] = re.sub(r"[\x00-\x1f]", "", r["text"])
-    return [r for r in runs if r["text"]]
+        if "text" in r:
+            r["text"] = re.sub(r"[\x00-\x1f]", "", r["text"])
+    return [r for r in runs if r.get("br") or r.get("text")]
 
 
 # ---------------------------------------------------------------------------
@@ -230,6 +236,9 @@ def _set_strike(run):
 
 def _apply_runs(paragraph, runs, colors, size_pt, base_color, font=None):
     for r in runs:
+        if r.get("br"):
+            paragraph._p.append(paragraph._p.makeelement(qn("a:br"), {}))
+            continue
         run = paragraph.add_run()
         run.text = r["text"]
         f = run.font

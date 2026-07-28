@@ -163,8 +163,9 @@ Bundled: `midnight-executive` (default), `warm-terracotta`, `teal-trust`,
 Paragraphs, bullet/numbered lists, **bold**/*italic*/~~strike~~/`<u>underline</u>`,
 `inline code`, fenced code blocks, links, images (`![alt](path)` — PNG/JPG and,
 for PDF output, PDF/SVG too), blockquotes (rendered as a tinted box, not a
-stripe), pipe tables, and `####`+ sub-headings (note: `###` is reserved for
-region markers).
+stripe), pipe tables, `####`+ sub-headings (note: `###` is reserved for
+region markers), and `<br>` forced line breaks — including inside table
+cells, where the PDF path wraps the cell in `\makecell`.
 
 Straight quotes are curled automatically — `"double"` and `'single'` become
 proper typographic quotes, apostrophes are preserved, and quotes inside code

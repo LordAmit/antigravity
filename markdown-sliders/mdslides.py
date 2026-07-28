@@ -260,6 +260,8 @@ def render_inline(text, ctx):
     E0, E1 = "\x01E\x01", "\x01e\x01"
     S0, S1 = "\x01S\x01", "\x01s\x01"
     U0, U1 = "\x01U\x01", "\x01u\x01"
+    NL = "\x01N\x01"  # <br> -> forced line break
+    text = re.sub(r"<br\s*/?>", NL, text)
     text = re.sub(r"<u>(.+?)</u>", lambda m: U0 + m.group(1) + U1, text, flags=re.S)
     text = re.sub(r"\*\*([^*]+)\*\*", lambda m: B0 + m.group(1) + B1, text)
     text = re.sub(r"__([^_]+)__", lambda m: B0 + m.group(1) + B1, text)
@@ -272,6 +274,7 @@ def render_inline(text, ctx):
     text = text.replace(E0, r"\emph{").replace(E1, "}")
     text = text.replace(S0, r"\sout{").replace(S1, "}")
     text = text.replace(U0, r"\uline{").replace(U1, "}")
+    text = text.replace(NL, r"\\")
 
     def put_link(m):
         href, label = links[int(m.group(1))]
@@ -398,16 +401,25 @@ def _consume_list(lines, i, ordered, ctx):
 def render_table(rows, ctx):
     def cells(line):
         return [c.strip() for c in line.strip().strip("|").split("|")]
+
+    def cell_tex(c):
+        # A <br> renders as \\ which would end the tabular row; wrap such
+        # cells in \makecell so the break stays inside the cell.
+        tex = render_inline(c, ctx)
+        if r"\\" in tex:
+            tex = r"\makecell[l]{" + tex + "}"
+        return tex
+
     header = cells(rows[0])
     body = [cells(r) for r in rows[2:]]
     ncol = len(header)
     colspec = " ".join(["l"] * ncol)
     out = ["\\begin{center}", f"\\begin{{tabular}}{{{colspec}}}", "\\toprule"]
-    out.append(" & ".join(r"\textbf{\color{headingcol}" + render_inline(c, ctx) + "}" for c in header) + r" \\")
+    out.append(" & ".join(r"\textbf{\color{headingcol}" + cell_tex(c) + "}" for c in header) + r" \\")
     out.append("\\midrule")
     for r in body:
         r = r + [""] * (ncol - len(r))
-        out.append(" & ".join(render_inline(c, ctx) for c in r[:ncol]) + r" \\")
+        out.append(" & ".join(cell_tex(c) for c in r[:ncol]) + r" \\")
     out += ["\\bottomrule", "\\end{tabular}", "\\end{center}"]
     return "\n".join(out)
 
@@ -765,6 +777,7 @@ PREAMBLE = r"""\documentclass[aspectratio=169]{beamer}
 \usepackage{lmodern}
 \usepackage{xcolor}
 \usepackage{booktabs}
+\usepackage{makecell}
 \usepackage{listings}
 \usepackage{tcolorbox}
 \usepackage[export]{adjustbox}
