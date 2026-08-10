@@ -413,8 +413,103 @@ async function removeFont(name) {
     }
 }
 
+// Export geometry: the canvas is authored at 600x800 (3:4).
+// Scale 2.56 yields exactly 1536 x 2048px.
+const EXPORT_WIDTH = 600;
+const EXPORT_HEIGHT = 800;
+const EXPORT_SCALE = 2.56;
+
+// Collect the text of every same-origin stylesheet so it can be inlined into
+// the html2canvas clone. html2canvas renders into an about:blank iframe and
+// does NOT wait for <link rel="stylesheet"> to load there; under the service
+// worker (installed PWA / offline) that request can fail outright, which is
+// what produced unstyled, wrongly-sized exports.
+function collectSameOriginCSS() {
+    let css = '';
+    for (const sheet of document.styleSheets) {
+        let rules;
+        try {
+            rules = sheet.cssRules;
+        } catch (e) {
+            // Cross-origin sheet (e.g. Google Fonts) — not readable, skip it.
+            // Those font faces are carried over via document.fonts instead.
+            continue;
+        }
+        if (!rules) continue;
+        for (const rule of rules) {
+            css += rule.cssText + '\n';
+        }
+    }
+    return css;
+}
+
+// Resolve the CSS to inline into the clone. Reading document.styleSheets is the
+// fast path; it fails under a file:// origin, where Chrome treats every file as
+// an opaque origin. fetch() is the fallback for the odd case where the sheet is
+// unreadable but still retrievable.
+async function resolveExportCSS() {
+    const fromStyleSheets = collectSameOriginCSS();
+    if (fromStyleSheets.trim()) return fromStyleSheets;
+
+    try {
+        const res = await fetch('style.css');
+        if (res.ok) return await res.text();
+    } catch (e) {
+        // file:// blocks fetch entirely.
+    }
+    return '';
+}
+
+// Make the cloned document self-contained and render-ready
+function prepareExportClone(clonedDoc, inlinedCSS) {
+    // Relative urls (background textures) must resolve against the real page,
+    // not about:blank.
+    const base = clonedDoc.createElement('base');
+    base.href = document.baseURI;
+    clonedDoc.head.insertBefore(base, clonedDoc.head.firstChild);
+
+    // Inline the stylesheets rather than relying on the <link> loading in time.
+    const style = clonedDoc.createElement('style');
+    style.textContent = inlinedCSS;
+    clonedDoc.head.appendChild(style);
+
+    // Re-apply the live CSS custom properties (colors, fonts, sizes).
+    const liveVars = document.documentElement.style;
+    for (const prop of liveVars) {
+        if (prop.startsWith('--')) {
+            clonedDoc.documentElement.style.setProperty(prop, liveVars.getPropertyValue(prop));
+        }
+    }
+
+    // The on-screen preview sits inside a clipped, viewport-scaled box. Lift the
+    // canvas out to the document origin at its true 600x800 size so the capture
+    // region is exactly (0, 0, 600, 800) regardless of preview scale, scroll
+    // position or which mobile tab is active.
+    const clonedCanvas = clonedDoc.getElementById('export-canvas');
+    if (clonedCanvas) {
+        clonedDoc.body.style.margin = '0';
+        clonedDoc.body.style.overflow = 'visible';
+        clonedCanvas.style.position = 'absolute';
+        clonedCanvas.style.top = '0';
+        clonedCanvas.style.left = '0';
+        clonedCanvas.style.width = `${EXPORT_WIDTH}px`;
+        clonedCanvas.style.height = `${EXPORT_HEIGHT}px`;
+        clonedCanvas.style.transform = 'none';
+        clonedDoc.body.appendChild(clonedCanvas);
+    }
+
+    // Sync custom font faces to the cloned iframe context
+    document.fonts.forEach(font => {
+        try {
+            clonedDoc.fonts.add(font);
+        } catch (e) {
+            // Some UA-provided faces cannot be adopted across documents; ignore.
+        }
+    });
+}
+
 // High-resolution Canvas image export
-function downloadImage() {
+async function downloadImage() {
     if (!window.html2canvas) {
         alert("Image renderer library is still loading, please wait.");
         return;
@@ -423,23 +518,44 @@ function downloadImage() {
     btnDownload.textContent = "Generating...";
     btnDownload.disabled = true;
 
+    const inlinedCSS = await resolveExportCSS();
+
+    // Without the stylesheet the clone renders as unstyled text at the wrong
+    // size. Fail loudly rather than hand back a broken image.
+    if (!inlinedCSS.trim()) {
+        alert(
+            "Could not read the stylesheet, so the image would export unstyled.\n\n" +
+            "This happens when the page is opened directly from disk (file://). " +
+            "Serve the folder over http (e.g. `python3 -m http.server`) or use the installed app."
+        );
+        btnDownload.textContent = "Download Image (3:4)";
+        btnDownload.disabled = false;
+        return;
+    }
+
     // Ensure all custom fonts are ready in document context
     document.fonts.ready.then(() => {
-        // Render canvas. Original size is 800x600.
-        // Using scale: 2.56 yields exactly 2048 x 1536px image resolution.
         html2canvas(exportCanvas, {
-            scale: 2.56,
+            scale: EXPORT_SCALE,
+            // prepareExportClone() moves the canvas to the document origin, so
+            // the capture region is fixed regardless of preview scale/scroll.
+            x: 0,
+            y: 0,
+            width: EXPORT_WIDTH,
+            height: EXPORT_HEIGHT,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: Math.max(document.documentElement.clientWidth, EXPORT_WIDTH),
+            windowHeight: Math.max(document.documentElement.clientHeight, EXPORT_HEIGHT),
             useCORS: true,
-            allowTaint: true,
-            backgroundColor: null,
+            // Must stay false: a tainted canvas makes toDataURL() throw
+            // SecurityError. Better to drop an unloadable background than to
+            // fail the whole export.
+            allowTaint: false,
+            // JPEG has no alpha; transparent pixels would flatten to black.
+            backgroundColor: '#ffffff',
             logging: false,
-            letterRendering: true,
-            onclone: (clonedDoc) => {
-                // Sync custom font faces to the cloned iframe context
-                document.fonts.forEach(font => {
-                    clonedDoc.fonts.add(font);
-                });
-            }
+            onclone: (clonedDoc) => prepareExportClone(clonedDoc, inlinedCSS)
         }).then((canvas) => {
             const link = document.createElement('a');
             link.download = `quote_${Date.now()}.jpg`;
@@ -450,7 +566,7 @@ function downloadImage() {
             btnDownload.disabled = false;
         }).catch((err) => {
             console.error("Image generation failed", err);
-            alert("Could not generate image. Please try again.");
+            alert(`Could not generate image.\n\n${err && (err.message || err)}`);
             btnDownload.textContent = "Download Image (3:4)";
             btnDownload.disabled = false;
         });

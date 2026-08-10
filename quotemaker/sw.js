@@ -1,4 +1,4 @@
-const CACHE_NAME = 'quotemaker-v1';
+const CACHE_NAME = 'quotemaker-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
