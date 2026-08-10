@@ -361,6 +361,13 @@ def render_blocks(lines, ctx):
             parts.append(block)
             continue
 
+        # A paragraph that is nothing but an image is a standalone graphic:
+        # center it instead of flushing it left.
+        if re.match(r"^!\[[^\]]*\]\([^)\s]+\)$", s):
+            parts.append("\\begin{center}\n" + render_inline(s, ctx) + "\n\\end{center}")
+            i += 1
+            continue
+
         para = []
         while i < n and lines[i].strip() and not _is_block_start(lines[i]):
             para.append(lines[i].strip())
@@ -442,8 +449,8 @@ def frame_default(slide, ctx):
     body = render_blocks(slide["body_lines"] + _all_region_lines(slide), ctx)
 
     # Optional full-width image from the `image:` frontmatter key, rendered
-    # above the body. `scale:`, `caption:` and `credit:` behave as in the
-    # image-side layout.
+    # centered above the body. `scale:`, `caption:` and `credit:` behave as in
+    # the image-side layout and are centered under the image.
     img_block = ""
     if fm.get("image"):
         img_tex = image_tex(fm["image"], ctx)
@@ -459,7 +466,7 @@ def frame_default(slide, ctx):
         if fm.get("credit"):
             img_block += ("\n\\par\\smallskip\n{\\color{muted}\\footnotesize "
                           + render_inline(str(fm["credit"]), ctx) + "\\par}")
-        img_block += "\n\\par\\medskip\n"
+        img_block = "\\begin{center}\n" + img_block + "\n\\end{center}\n\\medskip\n"
 
     head = "{" + title + "}" if title else "{}"
     return "\\begin{frame}[fragile]" + head + "\n" + img_block + body + "\n\\end{frame}"
